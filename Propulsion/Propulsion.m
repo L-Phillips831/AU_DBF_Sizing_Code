@@ -13,12 +13,16 @@ classdef Propulsion
             Prop.propeller = propeller;
             Prop.motor = Prop.motor.calcMaxPower(Prop.battery);
         end
+
+        function RPM = calcRPM(Prop,ThrottleSetting)
+            RPM = Prop.motor.Kv .* Prop.battery.voltage .* ThrottleSetting;
+        end
+
+        function Thrust = calcThrust(Prop,)
     end
 
     methods (Static)
         
-        function RPM = calcRPM(Prop,ThrottleSetting)
-            RPM = Prop.motor.Kv .* Prop.battery.voltage .* ThrottleSetting;
-        end
+        
     end
 end

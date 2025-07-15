@@ -8,7 +8,7 @@ classdef motor
     methods
         function mt = motor(Kv,maxCurrent,Rm)
             mt.Kv = Kv;
-            mt.maxCurrent =maxCurrent;
+            mt.maxCurrent = maxCurrent;
             mt.Rm = Rm;
         end
         
