@@ -14,7 +14,7 @@ classdef Mission
         %   - vehicle: vehicle object containing relevant informataion of
         %              the current aircraft sizing and geometry.
         %
-        function obj = mission(n_laps_, vehicle_)
+        function obj = Mission(n_laps_, vehicle_)
             obj.n_laps = n_laps_;
             obj.vehicle = vehicle_;
 
