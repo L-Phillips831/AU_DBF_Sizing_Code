@@ -4,8 +4,8 @@ classdef propeller
 
     properties
         perfData (1,:) cell % Cell array of tables containing propellor performance data
-        GI_Thrust_fcn_J_RPM griddedInterpolant = griddedInterpolant(1:2,1:2) % Gridded interpolant to calculate Thrust {N} from J and RPM
-        GI_Power_fcn_J_RPM griddedInterpolant = griddedInterpolant(1:2,1:2) % Gridded interpolant to calculate Power reqiured {W} from J and RPM
+        GI_Thrust_fcn_V_RPM griddedInterpolant = griddedInterpolant(1:2,1:2) % Gridded interpolant to calculate Thrust {N} from V {m/s} and RPM
+        GI_Power_fcn_V_RPM griddedInterpolant = griddedInterpolant(1:2,1:2) % Gridded interpolant to calculate Power reqiured {W} from V {m/s} and RPM
         pitch (1,1) double % Propellor pitch
         diameter (1,1) double % Propellor diameter {m}
     end
@@ -83,42 +83,42 @@ classdef propeller
             % advance ratio (j) and RPM.
 
             % Loop through all advance ratios and get maximum value.
-            Jmax = 0;
+            Vmax = 0;
             for i=1:length(prop.perfData)
-                Jtest = max(prop.perfData{i}.J);
-                if Jtest > Jmax
-                    Jmax = Jtest;
+                Vtest = max(prop.perfData{i}.V_mph) * 0.44704;
+                if Vtest > Vmax
+                    Vmax = Vtest;
                 end
             end
 
             % Create vector of common advance ratios and RPM values
-            Jvec = linspace(0,Jmax,100)';
+            Vvec = linspace(0,Vmax,100)';
             RPMvec = (1:length(prop.perfData)) * 1000;
 
             % Convert vectors to matrices
-            Jmat = repmat(Jvec,1,length(RPMvec));
-            RPMmat = repmat(RPMvec,length(Jvec),1);
+            Vmat = repmat(Vvec,1,length(RPMvec));
+            RPMmat = repmat(RPMvec,length(Vvec),1);
             
             % Initialize Thrust and Power matrices
-            Tmat = zeros(length(Jvec),length(prop.perfData));
-            PWRmat = zeros(length(Jvec),length(prop.perfData));
+            Tmat = zeros(length(Vvec),length(prop.perfData));
+            PWRmat = zeros(length(Vvec),length(prop.perfData));
             
             % Get values for Thrust and PWR at each advance ratio and RPM
             for i=1:length(prop.perfData)
                 % Remove any NaN from data and interpolate to generate new data
-                J = prop.perfData{i}.J(~isnan(prop.perfData{i}.Thrust_N));
+                V = prop.perfData{i}.V_mph(~isnan(prop.perfData{i}.Thrust_N)) * 0.44704;
                 T = prop.perfData{i}.Thrust_N(~isnan(prop.perfData{i}.Thrust_N));
                 P = prop.perfData{i}.PWR_W(~isnan(prop.perfData{i}.Thrust_N));
 
-                Tmat(:,i) = interp1(J,T,Jvec,'spline','extrap');
-                PWRmat(:,i) = interp1(J,P,Jvec,'spline','extrap');
+                Tmat(:,i) = interp1(V,T,Vvec,'spline','extrap');
+                PWRmat(:,i) = interp1(V,P,Vvec,'spline','extrap');
             end
             % Make any negative values in the pwoer matrix 0
             PWRmat(Tmat<0) = 0;
             
             % Make gridded interpolants from matrices
-            prop.GI_Thrust_fcn_J_RPM = griddedInterpolant(Jmat,RPMmat,Tmat,'linear','linear');
-            prop.GI_Power_fcn_J_RPM = griddedInterpolant(Jmat,RPMmat,PWRmat,'linear','nearest');
+            prop.GI_Thrust_fcn_V_RPM = griddedInterpolant(Vmat,RPMmat,Tmat,'linear','linear');
+            prop.GI_Power_fcn_V_RPM = griddedInterpolant(Vmat,RPMmat,PWRmat,'linear','nearest');
             
         end
 

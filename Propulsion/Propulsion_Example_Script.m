@@ -27,8 +27,8 @@ tbl.q = 0.5.*tbl.rho.*tbl.V.^2;
 tbl.Throttle = ones(n,1).*1;
 tbl.RPM = propulsion.calcRPM(tbl.Throttle);
 tbl.J = tbl.V ./ tbl.RPM .* 60 ./ propulsion.propeller.diameter;
-tbl.Thrust = propulsion.propeller.GI_Thrust_fcn_J_RPM(tbl.J,tbl.RPM);
-tbl.Power = propulsion.propeller.GI_Power_fcn_J_RPM(tbl.J,tbl.RPM);
+tbl.Thrust = propulsion.propeller.GI_Thrust_fcn_V_RPM(tbl.V,tbl.RPM);
+tbl.Power = propulsion.propeller.GI_Power_fcn_V_RPM(tbl.V,tbl.RPM);
 tbl.dt = ones(n,1).*1;
 tbl.dE = tbl.Power .* tbl.dt;
 

@@ -18,7 +18,7 @@ classdef Propulsion
             RPM = Prop.motor.Kv .* Prop.battery.voltage .* ThrottleSetting;
         end
 
-        function Thrust = calcThrust(Prop,)
+        %function Thrust = calcThrust(Prop,)
     end
 
     methods (Static)
