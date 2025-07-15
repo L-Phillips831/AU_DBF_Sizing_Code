@@ -47,28 +47,21 @@ ylabel('Power (W)')
 
 xlabel('Velocity (m/s)')
 
-% 
-% GI_T = propulsion.propeller.GI_Thrust_fcn_V_RPM;
-% 
-% maxThrust = max(max(GI_T.Values));
-% 
-% Tvec = linspace(0,maxThrust,10);
-% Vvec = GI_T.GridVectors{1,1}';
-% 
-% Vmat = repmat(Vvec,1,length(Tvec));
-% Tmat = repmat(Tvec,length(Vvec),1);
-% 
-% RPMvec = GI_T.GridVectors{1,2};
-% RPMmat = zeros(length(Vvec),length(Tvec));
-% 
-% for i=1:length(Vvec)
-%     T = GI_T(Vvec(i).*ones(1,length(RPMvec)),RPMvec);
-% 
-%     RPMmat(i,:) = interp1(T,RPMvec,Tvec,'linear');
-% end
 
-%propulsion.propeller.GI_RPM_fcn_V_Thrust = griddedInterpolant(Vmat,Tmat,RPMmat,'linear','linear');
+GI_T = propulsion.propeller.GI_Thrust_fcn_V_RPM;
 
-rpmtest = propulsion.propeller.GI_RPM_fcn_V_Thrust(0,10);
+maxThrust = max(max(GI_T.Values));
 
-thrusttest = propulsion.propeller.GI_Thrust_fcn_V_RPM(0,rpmtest);
+Tvec = linspace(0,maxThrust,100);
+Vvec = GI_T.GridVectors{1,1};
+
+Vmat = repmat(Vvec,1,length(RPMvec));
+Tmat = repmat(Tvec,length(Vvec),1);
+
+RPMmat = zeros(length(Vvec),length(Tmat));
+
+for i=1:length(Tvec)
+    T = GI_T(V)
+
+    RPMmat(:,i) = interp1(V,RPM,)
+end

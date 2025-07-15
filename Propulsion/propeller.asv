@@ -127,34 +127,25 @@ classdef propeller
         end
 
         function prop = mkRPMGriddedInterp(prop)
-            % Creates a GI for RPM as a function of velocity {m/s}
-            % and thrust reqiured {N}
-            
-            % get the maximum thrust value
+            % Creates a GI for RPM as a
+
             maxThrust = max(max(prop.GI_Thrust_fcn_V_RPM.Values));
-            
-            % create vector of common velocities and thrusts
+
             Tvec = linspace(0,maxThrust,50);
             Vvec = prop.GI_Thrust_fcn_V_RPM.GridVectors{1,1}';
-            
-            % convert vectors to matrices
+
             Vmat = repmat(Vvec,1,length(Tvec));
             Tmat = repmat(Tvec,length(Vvec),1);
 
-            % get RPM test vector and initialize RPM matrix
             RPMvec = prop.GI_Thrust_fcn_V_RPM.GridVectors{1,2};
             RPMmat = zeros(length(Vvec),length(Tvec));
 
-            % get rpm value for each velocity and thrust pair
             for i=1:length(Vvec)
-                % get thrust values aligned with RPM test vector
                 T = prop.GI_Thrust_fcn_V_RPM(Vvec(i).*ones(1,length(RPMvec)),RPMvec);
 
-                % get RPM for the common thrust value
                 RPMmat(i,:) = interp1(T,RPMvec,Tvec,'linear');
             end
 
-            % create gridded interpolants from matrices
             prop.GI_RPM_fcn_V_Thrust = griddedInterpolant(Vmat,Tmat,RPMmat,'linear','linear');
         end
 
