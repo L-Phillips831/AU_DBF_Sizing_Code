@@ -1,28 +1,55 @@
 classdef Propulsion
     properties
         battery (1,:) battery
-        esc esc
-        motor motor
-        propeller propeller
+        esc (1,:) esc
+        motor (1,:) motor
+        propeller (1,:) propeller
+        wire (1,:) wiring
     end
     methods
-        function Prop = Propulsion(battery,esc,motor,propeller)
-            Prop.battery = battery;
-            Prop.esc = esc;
-            Prop.motor = motor;
-            Prop.propeller = propeller;
-            Prop.motor = Prop.motor.calcMaxPower(Prop.battery);
+        function prop = Propulsion(battery,esc,motor,propeller,wire)
+            prop.battery = battery;
+            prop.esc = esc;
+            prop.motor = motor;
+            prop.propeller = propeller;
+            prop.wire = wire;
+            prop.motor = prop.motor.calcMaxPower(prop.battery);
         end
 
-        function RPM = calcRPM(Prop,ThrottleSetting)
-            RPM = Prop.motor.Kv .* Prop.battery.voltage .* ThrottleSetting;
+        function RPM = calcRPM(prop,ThrottleSetting)
+            RPM = prop.motor.Kv .* prop.battery.voltage .* ThrottleSetting;
         end
 
-        %function Thrust = calcThrust(Prop,)
+        function efficiency = calcMotorEfficiency(prop,powerOut)
+            current = prop.battery.voltage ./ powerOut;
+            powerIn = powerOut + (prop.motor.Io * prop.battery.voltage) + (prop.motor.Rm .* current.^2);
+
+            efficiency = powerOut ./ powerIn;
+        end
+
+        function efficiency = calcWireEfficiency(prop,powerOut)
+            current = prop.battery.voltage ./ powerOut;
+            powerIn = powerOut + (prop.wire.Rm .* current.^2);
+
+            efficiency = powerOut ./ powerIn;
+        end
+
+        function powerIn = calcReqiuredPower(prop,RPM,V)
+
+            powerOut = prop.propeller.GI_Power_fcn_V_RPM(V,RPM);
+
+            motorEfficiency = prop.calcMotorEfficiency(powerOut);
+
+            powerIntoMotor = powerOut ./ (motorEfficiency + 1e-10);
+
+            wireEfficiency = prop.calcWireEfficiency(powerIntoMotor);
+            
+            powerIn = powerIntoMotor ./ (wireEfficiency + 1e-10);
+
+        end
     end
 
     methods (Static)
-        
         
     end
 end

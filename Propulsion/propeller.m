@@ -32,7 +32,7 @@ classdef propeller
             % ".dat" files to a cell array of matlab tables.
 
             % Initialize counters and flags
-            TableFlag = 0;
+            TableFlag = false;
             n = 0;
             i = 1;
 
@@ -52,11 +52,11 @@ classdef propeller
                 elseif contains(tline,"RPM =") % If a line contains "RPM =" sets flag to grab data on next line
                     i = i+1;
                     n = n+1;
-                    TableFlag = 1;
-                elseif TableFlag == 1 % Gets prop data and resets TableFlag
+                    TableFlag = true;
+                elseif TableFlag == true % Gets prop data and resets TableFlag
             
                     Data(:,:,i-1) = readmatrix(perfDataFile,"Range",string(n+5)+":"+string(n+35));
-                    TableFlag = 0;
+                    TableFlag = false;
                     n = n+1;
                 else
                     n = n+1;

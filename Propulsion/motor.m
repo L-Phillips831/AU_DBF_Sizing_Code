@@ -4,6 +4,7 @@ classdef motor
         maxPower (1,1) double % Motor max power {W}
         maxCurrent (1,1) double % Motor max current {A}
         Rm (1,1) double = 0.013 % Motor Resistance {Ohms}
+        Io (1,1) double = 1.0 % Motor no load current (hysteresis/ eddy current, mechanical losses)
     end
     methods
         function mt = motor(Kv,maxCurrent,Rm)
@@ -15,5 +16,9 @@ classdef motor
         function mt = calcMaxPower(mt,bat)
             mt.maxPower = bat.voltage * mt.maxCurrent;
         end
+    end
+
+    methods
+
     end
 end
