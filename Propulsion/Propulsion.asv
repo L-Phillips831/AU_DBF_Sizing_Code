@@ -16,13 +16,15 @@ classdef Propulsion
             prop.motor = prop.motor.calcMaxPower(prop.battery);
         end
 
-        function RPM = calcRPM(prop,calcType,tbl)
+        function RPM = calcRPM(prop,calcType,calcTypeValue)
+            p = inputParser;
+            addRequired(p,'')
 
             switch calcType
                 case 'throttle'
-                    RPM = prop.motor.Kv .* prop.battery.voltage .* tbl.Throttle;
+                    RPM = prop.motor.Kv .* prop.battery.voltage .* calcTypeValue;
                 case 'thrust'
-                    RPM = prop.propeller.GI_RPM_fcn_V_Thrust(tbl.V, tbl.Thrust);
+                    RPM = prop.propeller.GI_RPM_fcn_V_Thrust(calcTypeValue{1}, calcTypeValue{2});
             end
             
         end

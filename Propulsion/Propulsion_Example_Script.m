@@ -6,7 +6,7 @@ clc
 prop = propeller(7,11*0.0254,"Propeller Data Files\PER3_11x8.dat");
 
 % Create battery object
-bt = battery(10000,6,100,"LiPo");
+bt = battery(10000,12,100,"LiPo");
 
 % Create motor object
 mt = motor(470,130,0.0129);
@@ -29,8 +29,8 @@ tbl.alt = ones(n,1).*0;
 tbl.q = 0.5.*tbl.rho.*tbl.V.^2;
 
 tbl.Throttle = ones(n,1).*1;
-
-tbl.RPM = propulsion.calcRPM(tbl.Throttle);
+%tbl.Thrust = 10.*ones(n,1);
+tbl.RPM = propulsion.calcRPM('throttle',tbl);
 tbl.J = tbl.V ./ tbl.RPM .* 60 ./ propulsion.propeller.diameter;
 tbl.Thrust = propulsion.propeller.GI_Thrust_fcn_V_RPM(tbl.V,tbl.RPM);
 tbl.Power = propulsion.calcReqiuredPower(tbl.RPM,tbl.V);
