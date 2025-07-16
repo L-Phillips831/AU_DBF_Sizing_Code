@@ -48,5 +48,12 @@ classdef Aero_Builder
 
 
     end
+
+    methods (Static)
+        function [SM, NP, flag] = check_long_stab(wing_geom, tail_geoms)
+
+        end
+
+    end
 end
 
