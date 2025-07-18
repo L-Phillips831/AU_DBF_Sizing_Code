@@ -1,11 +1,16 @@
-classdef Aero_Builder
+classdef Lifting_Surface
     % The Aero class is used for constructing a preliminary aerodynamic
     % buildup by component according to Raymer's method. The main outputs
     % of this class are the drag polar and CL_max of the geometry which are
     % then used for energy absorbtion analysis.
     
     properties
-        geom (1,1) struct  % Geometry struct containing sizing info for the geom
+        S (1,1) double
+        AR (1,1) double
+        span (1,1) double
+        taper (1,1) double
+        sweep (1,1) double
+
     end
     
     methods (Access = public)
@@ -14,14 +19,14 @@ classdef Aero_Builder
         %   - vehicle: the vehicle object containing the important
         %              information about the current design iteration
         %
-        function obj = Aero_Builder(geom_)
-            obj.geom =  geom_;
+        function obj = Lifting_Surface(S_, AR_, span_, taper_, sweep_)
+           
            
         end
 
         function CL_alpha = get_CL_alpha_sub(obj, M)
 
-            AR_ = obj.geom.AR;
+            AR_ = obj.AR;
             M_ = M;
             eta_ = 0.95;        % Approximation of lift curve slope w/ M recommended by Raymer.
             lambda_max_t = 0;   % Assuming rectangular geometry with no sweep

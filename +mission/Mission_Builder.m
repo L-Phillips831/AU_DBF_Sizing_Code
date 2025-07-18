@@ -1,4 +1,4 @@
-classdef Mission
+classdef Mission_Builder
 
     properties (Access = private)
          n_laps (1,1) uint16      % Total number of laps to be flown in the mission.
@@ -14,7 +14,7 @@ classdef Mission
         %   - vehicle: vehicle object containing relevant informataion of
         %              the current aircraft sizing and geometry.
         %
-        function obj = Mission(n_laps_, vehicle_)
+        function obj = Mission_Builder(n_laps_, vehicle_)
             obj.n_laps = n_laps_;
             obj.vehicle = vehicle_;
 

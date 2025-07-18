@@ -5,6 +5,8 @@ classdef Vehicle
     % the optimizer in order to maximize mission performance
     
     properties
+        components struct                           % struct of components
+        Propulsion (1,1) powerplant.Propulsion
         
     end
     
