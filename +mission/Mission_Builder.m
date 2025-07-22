@@ -33,45 +33,5 @@ classdef Mission_Builder
         function [t_total, E_total, flag] = run(obj)
 
         end
-
-
-    methods (Access = private)
-
-        function [t, E] = takeoff_lap(obj)
-
-        end
-
-        function [t, E] = landing_lap(obj)
-
-        end
-
-        function [t, E] = standard_lap(obj)
-
-        end
-
-        function [t, E] = misc_lap(obj)
-
-        end
-
-
-        function [t, E, d] = climb(obj)
-
-        end
-
-        function [t, E] = constant_accel(obj)
-
-        end
-
-        function [t, E] = turn(obj)
-
-        end
-
-
-        function [] = master_eq(~)
-
-        end
-
-
     end
-
 end
