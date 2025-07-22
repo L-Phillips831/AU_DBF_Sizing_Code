@@ -20,7 +20,7 @@ classdef Turn < Mission_Segment
             outputArg = obj.Property1 + inputArg;
         end
 
-        function outputArg = method2(obj,inputArg)
+        function outputArg = SustainedTurn(obj,inputArg)
             %METHOD1 Summary of this method goes here
             %   Detailed explanation goes here
             outputArg = obj.Property1 + inputArg;
