@@ -19,6 +19,12 @@ classdef Turn < Mission_Segment
             %   Detailed explanation goes here
             outputArg = obj.Property1 + inputArg;
         end
+        
+        function outputArg = method2(obj,inputArg)
+            %METHOD1 Summary of this method goes here
+            %   Detailed explanation goes here
+            outputArg = obj.Property1 + inputArg;
+        end
     end
 end
 
