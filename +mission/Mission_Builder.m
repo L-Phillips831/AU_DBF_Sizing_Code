@@ -1,8 +1,9 @@
 classdef Mission_Builder
 
     properties (Access = private)
-         n_laps (1,1) uint16      % Total number of laps to be flown in the mission.
-         vehicle (1,1) vehicle    % Vehicle object containing aircraft information.
+         n_laps (1,1) uint16                % Total number of laps to be flown in the mission.
+         vehicle (1,1) vehicle              % Vehicle object containing aircraft information.
+         segments mission.Mission_Segment   % Heterogenous array of mission segment objects
     end
 
     methods (Access = public)
@@ -31,6 +32,22 @@ classdef Mission_Builder
         %   - flag: boolean flag to ensure mission was completed without issue.
         %
         function [t_total, E_total, flag] = run(obj)
+
+            for segment = obj.segments
+                
+            end
+
+        end
+
+
+        % Method to add mission segment to list of segments
+        % Params:
+        %   - segment: segment to be added
+        % Returns:
+        %   - obj: modified mission_builder obj
+        %
+        function obj = add_segment(obj, segment)
+            obj.segments = [obj.segments, segment];
 
         end
     end

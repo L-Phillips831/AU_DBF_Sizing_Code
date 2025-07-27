@@ -3,7 +3,7 @@ classdef Takeoff < Mission_Segment
     %   Detailed explanation goes here
     
     properties
-        
+        table
     end
     
     methods
