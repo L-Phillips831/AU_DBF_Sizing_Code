@@ -34,8 +34,12 @@ classdef Turn < Mission_Segment
         function MissionTable = InstantaneousTurn(obj, dPhi)
         % Instantaneous Turn Mission Segment
 
-        % Description: Takes heading change and a flight history table
-        % Instantaneous -> Set throttle and limited by aero/structure.
+        % Description: Takes heading change and a flight history table as
+        % inputs. Finds the minimum lift bound between structural and
+        % aerodynamic maximum lift available. Gets centripetal acceleration
+        % as Lift/mass. Gets thrust and power from throttle setting and
+        % velocity. Gets forward acceleration from (T-D)/mass. Turn radius
+        % not fixed because speed and lift vary.
 
         % General variables
             tab  = obj.MissionTable;                                        % Need call
@@ -77,20 +81,19 @@ classdef Turn < Mission_Segment
                 if i>1
                     v(i) = v(i-1) + a(i-1)*dt;
                 end
-                % If i>1, calculate velocity
                 q(i) = 0.5*rho*v(i)^2;
                 LmaxAero = CLmax*q(i)*Sref;
                 LmaxStructure = lfStruc*mass*g;
                 L(i) = min([LmaxAero, LmaxStructure]);                      % Constrained by aero or structure
-                aCentr = L(i)/mass;                                         % bank at 90 deg)
+                aCentr = L(i)/mass;                                         % bank at 90 deg
                 CL(i) = L(i)/(Sref*q(i));
                 CD(i) = CD0 + k*CL(i)^2;
                 LD(i) = CL(i)/CD(i);
                 D(i) = L(i)/LD(i);
                 [thrust(i), pUse(i)] = PropulsionCalc(v(i), T_set);         % Need function
-                a(i) = (thrust(i) - D(i))/mass;
+                a(i) = (thrust(i) - D(i))/mass;                             % forward acceleration
                 r = v(i)^2 / aCentr;
-                omega = v(i)/r;
+                omega = v(i)/r;                                             % turn rate in rad/s
                 if i>1
                     Energy(i) = Energy(i-1) + pUse*dt;
                     dt = (phi(i)-phi(i-1))/omega;
@@ -130,7 +133,10 @@ classdef Turn < Mission_Segment
 
             % Description: Takes heading change and the aircraft object.
             % Aircraft object contains a table of flight time history.
-            % Sustained -> Constant turn rate at a certain load factor.
+            % Gets lift from the sustained load factor. Centripetal
+            % acceleration is found from g and the sustained lf. Thrust
+            % equals drag and propPower = Thrust*v. Gets pUse from the
+            % propulsion model with input propPower.
 
             % General variables
             tab  = obj.MissionTable;                                        % Need call
@@ -169,15 +175,15 @@ classdef Turn < Mission_Segment
             for i = 1:numVals
                 q(i) = 0.5*rho*v(i)^2;
                 L(i) = lf*mass*g;
-                aCentr = sqrt(lf^2 - 1);
+                aCentr = g*sqrt(lf^2 - 1);
                 r = v(i)^2 / aCentr;
                 CL(i) = L(i)/(Sref*q(i));
                 CD(i) = CD0 + k*CL(i);
                 LD(i) = CL(i)/CD(i);
                 D(i) = L(i)/LD(i);
                 thrust(i) = D(i);                                           
-                propPower = thrust(i)*v(i);                                 % Necessary?
-                pUse = PowerCalc(propPower);                                % Need function. Want v and thrust?
+                propPower = thrust(i)*v(i);                                 % Check with propulsion model
+                pUse = PowerCalc(propPower);                                % Check with propulsion model
                 if(i>1)
                     d(i) = d(i-1)+(phi(i)-phi(i-1))*r;                      % Small angle approximation
                     t(i) = t(i-1)+(phi(i)-phi(i-1))/sqrt(aCentr/r);         
