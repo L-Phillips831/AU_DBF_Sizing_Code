@@ -70,8 +70,6 @@ classdef Climb < Mission_Segment
             Tnew = struct2table(Snew); % Make it a structure
             obj.MissionTable = [tab; Tnew]; % Concatenate tables
         end
-        
-
     end
 end
 
