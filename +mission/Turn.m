@@ -31,13 +31,10 @@ classdef Turn < Mission_Segment
         end
         
         
-        function MissionTable = InstantaneousTurn(obj)
+        function MissionTable = InstantaneousTurn(obj, dPhi)
         % Instantaneous Turn Mission Segment
 
-        % Description: Takes heading change, a flight history table, and a
-        % path label between instantaneous and sustained turns.
-        % How are parameters defined for instantaneous or sustained?
-        % Sustained -> Constant turn rate at a certain load factor.
+        % Description: Takes heading change and a flight history table
         % Instantaneous -> Set throttle and limited by aero/structure.
 
         % General variables
@@ -50,13 +47,13 @@ classdef Turn < Mission_Segment
             g    = obj.g;                                                   % Need call
 
         % Instantaneous variables
-            lfMax = 0;                                                      % Need call, maximum structural load factor
+            lfStruc = obj.lfStruc;                                          % Need call, maximum structural load factor
 
 
         % Initialize table variables
             t      = tab.Time(end)*ones(numVals, 1); 
-            d      = tab.Distance*ones(numVals, 1);
-            v      = tab.Velocity*ones(numVals, 1);
+            d      = tab.Distance(end)*ones(numVals, 1);
+            v      = tab.Velocity(end)*ones(numVals, 1);
             a      = zeros(numVals, 1);
             pUse   = zeros(numVals, 1);
             thrust = zeros(numVals, 1); 
@@ -67,7 +64,7 @@ classdef Turn < Mission_Segment
             D      = zeros(numVals, 1); 
             LD     = zeros(numVals, 1); 
             hDot   = zeros(numVals, 1);                                     
-            h      = tab.Altitude*ones(numVals, 1);                         
+            h      = tab.Altitude(end)*ones(numVals, 1);                         
             Energy = tab.Energy(end)*ones(numVals, 1);                      
 
 
@@ -83,7 +80,7 @@ classdef Turn < Mission_Segment
                 % If i>1, calculate velocity
                 q(i) = 0.5*rho*v(i)^2;
                 LmaxAero = CLmax*q(i)*Sref;
-                LmaxStructure = lfMax*mass*g;
+                LmaxStructure = lfStruc*mass*g;
                 L(i) = min([LmaxAero, LmaxStructure]);                      % Constrained by aero or structure
                 aCentr = L(i)/mass;                                         % bank at 90 deg)
                 CL(i) = L(i)/(Sref*q(i));
@@ -128,9 +125,12 @@ classdef Turn < Mission_Segment
 
 
 
-        function MissionTable = SustainedTurn(obj)
+        function MissionTable = SustainedTurn(obj, dPhi)
             % Sustained Turn Mission Segment
-            %   Detailed explanation goes here
+
+            % Description: Takes heading change and the aircraft object.
+            % Aircraft object contains a table of flight time history.
+            % Sustained -> Constant turn rate at a certain load factor.
 
             % General variables
             tab  = obj.MissionTable;                                        % Need call
@@ -140,16 +140,13 @@ classdef Turn < Mission_Segment
             rho  = obj.rho;                                                 % Need call
             mass = tab.mass(end);                                           % Need call
             g    = obj.g;                                                   % Need call
-
-
-            % Sustained variables
-            lf = 0;                                                         % Need call, sustained load factor
+            lf   = obj.lfSust;                                              % Need call, sustained load factor
 
 
             % Initialize table variables
             t      = tab.Time(end)*ones(numVals, 1); 
-            d      = tab.Distance*ones(numVals, 1);
-            v      = tab.Velocity*ones(numVals, 1);
+            d      = tab.Distance(end)*ones(numVals, 1);
+            v      = tab.Velocity(end)*ones(numVals, 1);
             a      = zeros(numVals, 1);
             pUse   = zeros(numVals, 1);
             thrust = zeros(numVals, 1); 
@@ -160,7 +157,7 @@ classdef Turn < Mission_Segment
             D      = zeros(numVals, 1); 
             LD     = zeros(numVals, 1); 
             hDot   = zeros(numVals, 1);                                     
-            h      = tab.Altitude*ones(numVals, 1);                         
+            h      = tab.Altitude(end)*ones(numVals, 1);                         
             Energy = tab.Energy(end)*ones(numVals, 1);                      
 
 
