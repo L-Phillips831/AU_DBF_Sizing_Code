@@ -106,22 +106,23 @@ classdef Turn < Mission_Segment
             
 
         % New structure/table
-            Snew.Time = t;
-            Snew.E = Energy;
-            Snew.Power = pUse;
+            Snew.Time   = t;
+            Snew.E      = Energy;
+            Snew.Power  = pUse;
             Snew.Distance = d;
+            Snew.V_Ground = vGround;
             Snew.V = v;
             Snew.Acceleration = a;
             Snew.Altitude = h;
-            Snew.hDot = hDot;
-            Snew.Mass = mass*ones(numVals,1);
+            Snew.hDot   = hDot;
+            Snew.Mass   = mass*ones(numVals,1);
             Snew.Thrust = thrust;
-            Snew.q = q;
-            Snew.CL = CL;
-            Snew.CD = CD;
-            Snew.Lift = L;
-            Snew.Drag = D;
-            Snew.LD = LD;
+            Snew.q      = q;
+            Snew.CL     = CL;
+            Snew.CD     = CD;
+            Snew.Lift   = L;
+            Snew.Drag   = D;
+            Snew.LD     = LD;
             Tnew = struct2table(Snew); % Make it a structure
             MissionTable = [tab; Tnew]; % Concatenate tables
         end
@@ -193,22 +194,23 @@ classdef Turn < Mission_Segment
 
             
             % New structure/table
-            Snew.Time = t;
-            Snew.E = Energy;
-            Snew.Power = pUse;
+            Snew.Time   = t;
+            Snew.E      = Energy;
+            Snew.Power  = pUse;
             Snew.Distance = d;
+            Snew.V_Ground = vGround;
             Snew.V = v;
             Snew.Acceleration = a;
             Snew.Altitude = h;
-            Snew.hDot = hDot;
-            Snew.Mass = mass*ones(numVals,1);
+            Snew.hDot   = hDot;
+            Snew.Mass   = mass*ones(numVals,1);
             Snew.Thrust = thrust;
-            Snew.q = q;
-            Snew.CL = CL;
-            Snew.CD = CD;
-            Snew.Lift = L;
-            Snew.Drag = D;
-            Snew.LD = LD;
+            Snew.q      = q;
+            Snew.CL     = CL;
+            Snew.CD     = CD;
+            Snew.Lift   = L;
+            Snew.Drag   = D;
+            Snew.LD     = LD;
             Tnew = struct2table(Snew); % Make it a structure
             MissionTable = [tab; Tnew]; % Concatenate tables
         end
