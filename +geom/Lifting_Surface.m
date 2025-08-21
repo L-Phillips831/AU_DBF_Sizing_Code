@@ -1,4 +1,4 @@
-classdef Lifting_Surface
+classdef Lifting_Surface < Component
     % The Aero class is used for constructing a preliminary aerodynamic
     % buildup by component according to Raymer's method. The main outputs
     % of this class are the drag polar and CL_max of the geometry which are

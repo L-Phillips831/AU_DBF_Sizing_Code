@@ -1,9 +1,12 @@
-classdef Wing < Lifting_Surface
+classdef Wing < geom.Lifting_Surface
     %WEIGHT_BUILDER Summary of this class goes here
     %   Detailed explanation goes here
     
     properties
         end_geom (1,1) boolean
+        x_loc (1,1) double
+        z_loc (1,1) double
+
     end
     
     methods
