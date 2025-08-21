@@ -12,6 +12,18 @@ buildup, for now, is suited for conventional configuration aircraft
 
 % Need Logan's MATLAB expertise to format
 
+%{
+Inputs:
+- All Aero MACs
+- All Aero spans
+- 
+
+Undetermined:
+num structure for each aero surface
+load for each aero surface
+
+%}
+
 %% Densities
 rho.CF = 0; % [g/m^3]
 rho.Balsa = 0; % [g/m^3]
@@ -29,16 +41,14 @@ adj.Adhesion = 0; % Ratio of adhesion skin arc to MAC
 adj.Winglet = 0; % Ratio of winglet area to MAC^2
 adj.RibControl = 0; % Ratio of control surface rib area to MAC^2
 
-%% Component Mass Calculations
+%% Aero Component Mass Calculations
 loadWing = 0.5 * lfMTOW * weight;
 loadHorzTail = 0;
 loadVertTail = 0;
 
-massWing = CalcWing (MAC_Wing, spanWing, adj, rho, numWing, loadWing);
+massWing = CalcWing (MAC_Wing, spanWing, adj, rho, num, loadWing);
 massHorzTail = CalcWing (MAC_HorzTail, span, adj, rho, num, loadHorzTail);
 massVertTail = CalcWing (MAC_VertTail, span, adj, rho, num, loadVertTail);
-
-%% Tail
 
 %% Fuselage
 % To include the fuselage section, connection to empennage (boom or
@@ -54,10 +64,8 @@ function massWing = CalcWing (MAC, span, adj, rho, num, load)
 %% Wing
     % Inputs:
     % - MAC
-    % - numPlyRib
-    % - numBalsaRib
+    % - num
     % - span
-    % - wettedArea
     % - loadFactor (atMTOW)
     % - MTOW
     % - nacelleMass
@@ -69,27 +77,27 @@ function massWing = CalcWing (MAC, span, adj, rho, num, load)
     sigmaCF = 0; % N/m^2 normal stress, from Rockwest Composites Site
     thickness = 0;
 
-    mSpec = @(y, b) 4/(pi*b) * sqrt(1 - (2*y/b)^2);
+    mSpec    = @(y, b) 4/(pi*b) * sqrt(1 - (2*y/b)^2);
     mWrapper = @(y) mSpec(y, span);
-    I = integral(mWrapper, 0, b/2);
-    moment = I*load;
-    roWrap = @(rO) CalcRoRemainder (moment, sigmaCF, rO, thickness);
-    rOuter = bisection(roWrap, 1e-6, 0.1, 1e-6, 1000);
-    xcSpar = pi*(rOuter^2 - (rOuter - thicknessSpar)^2);
+    I        = integral(mWrapper, 0, b/2);
+    moment   = I*load*fsCF;
+    roWrap   = @(rO) CalcRoRemainder (moment, sigmaCF, rO, thickness);
+    rOuter   = bisection(roWrap, 1e-6, 0.1, 1e-6, 1000);
+    xcSpar   = pi*(rOuter^2 - (rOuter - thicknessSpar)^2);
 
     % Components, discounting quantity and variants/configs:
 
     % Ribs
-    rib = MAC^2 * adjRib; % Independent of density and quantity
-    adjPlyRib = numPlyRib * rho.Ply;
+    rib         = MAC^2 * adjRib; % Independent of density and quantity
+    adjPlyRib   = numPlyRib * rho.Ply;
     adjBalsaRib = numBalsaRib * rho.Balsa;
-    ribs = rib*(adjPlyRib + adjBalsaRib);
+    ribs        = rib*(adjPlyRib + adjBalsaRib);
 
     % Wing Spar
     spar = span * xcSpar * rho.CF;
 
     % Stringers
-    stringer = 0.003175^2 * span * rho.Balsa; % Independent of quantity
+    stringer  = 0.003175^2 * span * rho.Balsa; % Independent of quantity
     stringers = num.Stringers * stringer;
 
     % Monokote
@@ -105,10 +113,10 @@ function massWing = CalcWing (MAC, span, adj, rho, num, load)
     winglets = 2 * wingletsBool * MAC^2 * adj.Winglet * rho.Ply;
     
     % Control Surface Ribs
-    ribControl = MAC^2 * adj.RibControl; % Independent of density and quantity
-    adjControlHorn = num.RibControl * rho.Ply;
+    ribControl      = MAC^2 * adj.RibControl; % Independent of density and quantity
+    adjControlHorn  = num.RibControl * rho.Ply;
     adjBalsaControl = num.RibHorn * rho.Balsa;
-    ribsControl = ribControl*(adjControlHorn + adjBalsaControl);
+    ribsControl     = ribControl*(adjControlHorn + adjBalsaControl);
 
     % Control Surface Spar
     sparControl = MAC * span * adj.SparControl * 0.003175 * rho.Balsa;
@@ -117,12 +125,12 @@ function massWing = CalcWing (MAC, span, adj, rho, num, load)
     skinControl = span * MAC * adj.LeadingControl;
 
     % Control Surface Stringers
-    stringerControl = span * 0.003175 * 0.0127; % 
+    stringerControl  = span * 0.003175 * 0.0127; % 
     stringersControl = num.StringersControl * stringerControl;
 
-    massWing = ribs + spar + stringers + monokote + nacelleMass + skinLeading + skinAdhesion + winglets;
+    massWing     = ribs + spar + stringers + monokote + nacelleMass + skinLeading + skinAdhesion + winglets;
     massControls = ribsControl + sparControl + skinControl + stringersControl;
-    massWing = massWing + massControls;
+    massWing     = massWing + massControls;
 end
 
 
