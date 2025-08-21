@@ -1,4 +1,4 @@
-classdef Cruise < Mission_Segment
+classdef Cruise < mission.Mission_Segment
     %CRUISE Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -10,14 +10,15 @@ classdef Cruise < Mission_Segment
     end
     
     methods
-        function obj = Cruise(dDelta, T_set, vehicle)
+        function obj = Cruise(dDelta, T_set, numVals, vehicle)
             obj.T_set = T_set;
             obj.dDelta = dDelta;
             obj.vehicle = vehicle;
+            obj.numVals = numVals;
            
         end
 
-        function table = run(obj, tab)
+        function tbl = run(obj, tab)
         % Description: This function maps the time history for a fixed throttle setting
         % on a straight flight path.
         % Flow: Discretized over distance. Get time steps using
@@ -92,7 +93,7 @@ classdef Cruise < Mission_Segment
             Snew.Drag = D;
             Snew.LD = LD;
             Tnew = struct2table(Snew); % Make it a structure
-            table = [tab; Tnew]; % Concatenate tables and return
+            tbl = [tab; Tnew]; % Concatenate tables and return
 
         end
         

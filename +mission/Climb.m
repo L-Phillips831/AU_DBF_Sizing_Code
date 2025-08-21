@@ -1,4 +1,4 @@
-classdef Climb < Mission_Segment
+classdef Climb < mission.Mission_Segment
     %CLIMB Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -6,7 +6,7 @@ classdef Climb < Mission_Segment
         hEnd (1,1) double
         vClimb (1,1) double
         hDotClimb (1,1) double
-        vehicle (1,1) double
+        vehicle (1,1) Vehicle
         numVals (1,1) double
 
     end
@@ -20,7 +20,7 @@ classdef Climb < Mission_Segment
         %   - hDotClimb: climb rate
         %   - vehicle: vehicle class with solved sizing
         %
-        function obj = Cruise(hEnd, vClimb, hDotClimb, numVals, vehicle)
+        function obj = Climb(hEnd, vClimb, hDotClimb, numVals, vehicle)
             obj.hEnd = hEnd;
             obj.vClimb = vClimb;
             obj.hDotClimb = hDotClimb;
@@ -32,7 +32,7 @@ classdef Climb < Mission_Segment
 
 
 
-        function table = run(obj, tab)
+        function tbl = run(obj, tab)
         % Discretize over altitude from hStart to hEnd.
         % Find flight path angle from climb velocity and vertical velocity,
         % which are both constants as inputs.  Assume thrust, body x
@@ -92,7 +92,7 @@ classdef Climb < Mission_Segment
             Snew.Drag = D;
             Snew.LD = LD;
             Tnew = struct2table(Snew); % Make it a structure
-            table = [tab; Tnew]; % Concatenate tables and return
+            tbl = [tab; Tnew]; % Concatenate tables and return
         end
     end
 end

@@ -1,4 +1,4 @@
-classdef Takeoff < Mission_Segment
+classdef Takeoff < mission.Mission_Segment
     %TAKEOFF Summary of this class goes here
     %   Detailed explanation goes here
     

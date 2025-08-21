@@ -1,4 +1,4 @@
-classdef Turn < Mission_Segment
+classdef Turn < mission.Mission_Segment
     %TURN Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -32,14 +32,14 @@ classdef Turn < Mission_Segment
 
         end
 
-        function table = run(obj, tab)
+        function tbl = run(obj, tab)
             
             switch obj.option
                 case {'instantaneous', 'Instantaneous'}
-                    table = obj.InstantaneousTurn(obj.dPhi, tab);
+                    tbl = obj.InstantaneousTurn(obj.dPhi, tab);
 
                 case {'sustained', 'Sustained'}
-                    table = obj.SustainedTurn(obj.dPhi, tab);
+                    tbl = obj.SustainedTurn(obj.dPhi, tab);
 
                 otherwise  
                     error("Option must be (I/i)nstantaneous or (S/s)ustained");
