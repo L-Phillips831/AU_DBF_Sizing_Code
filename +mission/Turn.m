@@ -1,37 +1,55 @@
-classdef Turn < Mission_Segment
+classdef Turn < mission.Mission_Segment
     %TURN Summary of this class goes here
     %   Detailed explanation goes here
     
     properties       
-        table double
+        vehicle (1,1) Vehicle
+        dPhi (1,1) double
+        numVals (1,1) double
+        option char
+
     end
     
     methods
 
-        function obj = Turn(table)
+        function obj = Turn(dPhi, numVals, vehicle, option)
 
-            obj.table = table;
-        end
+            obj.vehicle = vehicle;
+            obj.dPhi = dPhi;
+            obj.numVals = numVals;
 
-        function table = run(obj, option)
-            
-            switch option
+             switch option
                 case {'instantaneous', 'Instantaneous'}
-                    obj = obj.InstantaneousTurn();
+                    obj.option = option;
 
                 case {'sustained', 'Sustained'}
-                    obj = obj.SustainedTurn();
+                    obj.option = option;
 
                 otherwise  
                     error("Option must be (I/i)nstantaneous or (S/s)ustained");
 
             end
 
-            table = obj.table;
+        end
+
+        function tbl = run(obj, tab)
+            
+            switch obj.option
+                case {'instantaneous', 'Instantaneous'}
+                    tbl = obj.InstantaneousTurn(obj.dPhi, tab);
+
+                case {'sustained', 'Sustained'}
+                    tbl = obj.SustainedTurn(obj.dPhi, tab);
+
+                otherwise  
+                    error("Option must be (I/i)nstantaneous or (S/s)ustained");
+
+            end
+
         end
         
         
-        function MissionTable = InstantaneousTurn(obj, dPhi)
+        function MissionTable = InstantaneousTurn(obj, dPhi, tab)
         % Instantaneous Turn Mission Segment
 
         % Description: Takes heading change and a flight history table as
@@ -42,47 +60,46 @@ classdef Turn < Mission_Segment
         % not fixed because speed and lift vary.
 
         % General variables
-            tab  = obj.MissionTable;                                        % Need call
-            Sref = obj.Sref;                                                % Need call
-            k    = obj.k;                                                   % Need call
-            CD0  = obj.CD0;                                                 % Need call
-            rho  = obj.rho;                                                 % Need call
-            mass = tab.mass(end);                                           % Need call
-            g    = obj.g;                                                   % Need call
+            Sref = obj.vehicle.Sref;                                              
+            k    = obj.vehicle.k;                                                  
+            CD0  = obj.vehicle.CD0;                                                
+            rho  = obj.vehicle.rho;                                                
+            mass = tab.mass(end);                                          
+            g    = 9.81;     % Acceleration due to gravity [m/s^2]                                             
 
         % Instantaneous variables
-            lfStruc = obj.lfStruc;                                          % Need call, maximum structural load factor
+            lfStruc = obj.vehicle.lfStruc;                                          % Need call, maximum structural load factor
 
 
         % Initialize table variables
-            t      = tab.Time(end)*ones(numVals, 1); 
-            d      = tab.Distance(end)*ones(numVals, 1);
-            v      = tab.Velocity(end)*ones(numVals, 1);
-            a      = zeros(numVals, 1);
-            pUse   = zeros(numVals, 1);
-            thrust = zeros(numVals, 1); 
-            q      = zeros(numVals, 1); 
-            CL     = zeros(numVals, 1); 
-            CD     = zeros(numVals, 1); 
-            L      = zeros(numVals, 1); 
-            D      = zeros(numVals, 1); 
-            LD     = zeros(numVals, 1); 
-            hDot   = zeros(numVals, 1);                                     
-            h      = tab.Altitude(end)*ones(numVals, 1);                         
-            Energy = tab.Energy(end)*ones(numVals, 1);                      
+            t      = tab.Time(end)*ones(obj.numVals, 1); 
+            d      = tab.Distance(end)*ones(obj.numVals, 1);
+            v      = tab.Velocity(end)*ones(obj.numVals, 1);
+            a      = zeros(obj.numVals, 1);
+            pUse   = zeros(obj.numVals, 1);
+            thrust = zeros(obj.numVals, 1); 
+            q      = zeros(obj.numVals, 1); 
+            CL     = zeros(obj.numVals, 1); 
+            CD     = zeros(obj.numVals, 1); 
+            L      = zeros(obj.numVals, 1); 
+            D      = zeros(obj.numVals, 1); 
+            LD     = zeros(obj.numVals, 1); 
+            hDot   = zeros(obj.numVals, 1);                                     
+            h      = tab.Altitude(end)*ones(obj.numVals, 1);                         
+            Energy = tab.Energy(end)*ones(obj.numVals, 1);                      
 
 
         % Discretization on heading
-            phi = linspace(0, dPhi, numVals);
+            phi = linspace(0, dPhi, obj.numVals);
            
 
         % Instantaneous
-            for i = 1:numVals
+            for i = 1:obj.numVals
                 if i>1
                     v(i) = v(i-1) + a(i-1)*dt;
                 end
                 q(i) = 0.5*rho*v(i)^2;
-                LmaxAero = CLmax*q(i)*Sref;
+                LmaxAero = obj.vehicle.CLmax*q(i)*Sref;
                 LmaxStructure = lfStruc*mass*g;
                 L(i) = min([LmaxAero, LmaxStructure]);                      % Constrained by aero or structure
                 aCentr = L(i)/mass;                                         % bank at 90 deg
@@ -115,7 +132,7 @@ classdef Turn < Mission_Segment
             Snew.Acceleration = a;
             Snew.Altitude = h;
             Snew.hDot   = hDot;
-            Snew.Mass   = mass*ones(numVals,1);
+            Snew.Mass   = mass*ones(obj.numVals,1);
             Snew.Thrust = thrust;
             Snew.q      = q;
             Snew.CL     = CL;
@@ -140,40 +157,40 @@ classdef Turn < Mission_Segment
             % propulsion model with input propPower.
 
             % General variables
-            tab  = obj.MissionTable;                                        % Need call
-            Sref = obj.Sref;                                                % Need call
-            k    = obj.k;                                                   % Need call
-            CD0  = obj.CD0;                                                 % Need call
-            rho  = obj.rho;                                                 % Need call
-            mass = tab.mass(end);                                           % Need call
-            g    = obj.g;                                                   % Need call
+            Sref = obj.vehicle.Sref;                                                
+            k    = obj.vehicle.k;                                                   
+            CD0  = obj.vehicle.CD0;                                                
+            rho  = obj.vehicle.rho;                                                 
+            mass = tab.vehicle.mass(end);                                          
+           
+            g    = 9.81;                                                  
             lf   = obj.lfSust;                                              % Need call, sustained load factor
 
 
             % Initialize table variables
-            t      = tab.Time(end)*ones(numVals, 1); 
-            d      = tab.Distance(end)*ones(numVals, 1);
-            v      = tab.Velocity(end)*ones(numVals, 1);
-            a      = zeros(numVals, 1);
-            pUse   = zeros(numVals, 1);
-            thrust = zeros(numVals, 1); 
-            q      = zeros(numVals, 1); 
-            CL     = zeros(numVals, 1); 
-            CD     = zeros(numVals, 1); 
-            L      = zeros(numVals, 1); 
-            D      = zeros(numVals, 1); 
-            LD     = zeros(numVals, 1); 
-            hDot   = zeros(numVals, 1);                                     
-            h      = tab.Altitude(end)*ones(numVals, 1);                         
-            Energy = tab.Energy(end)*ones(numVals, 1);                      
+            t      = tab.Time(end)*ones(obj.numVals, 1); 
+            d      = tab.Distance(end)*ones(obj.numVals, 1);
+            v      = tab.Velocity(end)*ones(obj.numVals, 1);
+            a      = zeros(obj.numVals, 1);
+            pUse   = zeros(obj.numVals, 1);
+            thrust = zeros(obj.numVals, 1); 
+            q      = zeros(obj.numVals, 1); 
+            CL     = zeros(obj.numVals, 1); 
+            CD     = zeros(obj.numVals, 1); 
+            L      = zeros(obj.numVals, 1); 
+            D      = zeros(obj.numVals, 1); 
+            LD     = zeros(obj.numVals, 1); 
+            hDot   = zeros(obj.numVals, 1);                                     
+            h      = tab.Altitude(end)*ones(obj.numVals, 1);                         
+            Energy = tab.Energy(end)*ones(obj.numVals, 1);                      
 
 
             % Discretization on heading
-            phi = linspace(0, dPhi, numVals);
+            phi = linspace(0, dPhi, obj.numVals);
 
 
             % Sustained
-            for i = 1:numVals
+            for i = 1:obj.numVals
                 q(i) = 0.5*rho*v(i)^2;
                 L(i) = lf*mass*g;
                 aCentr = g*sqrt(lf^2 - 1);
@@ -203,7 +220,7 @@ classdef Turn < Mission_Segment
             Snew.Acceleration = a;
             Snew.Altitude = h;
             Snew.hDot   = hDot;
-            Snew.Mass   = mass*ones(numVals,1);
+            Snew.Mass   = mass*ones(obj.numVals,1);
             Snew.Thrust = thrust;
             Snew.q      = q;
             Snew.CL     = CL;
