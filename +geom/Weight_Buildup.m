@@ -16,7 +16,7 @@ buildup, for now, is suited for conventional configuration aircraft
 Inputs:
 - All Aero MACs
 - All Aero spans
-- 
+- propulsion mass
 
 Undetermined:
 num structure for each aero surface
@@ -33,35 +33,80 @@ rho.Monokote = 0; % A 2D Density [g/m^2]
 %% Adjustments
 % Description: Non-dimensional constants determined by historical and 
 % experimental averages of real components. Should roughly apply to all
-% aerodynamic surfaces (wing, tail)
-adj.Rib = 0; % Ratio of rib area to MAC^2
-adj.Monokote = 0; % Ratio of Monokote area used to wetted area
-adj.Leading = 0; % Ratio of leading edge skin arc length to MAC
-adj.Adhesion = 0; % Ratio of adhesion skin arc to MAC
-adj.Winglet = 0; % Ratio of winglet area to MAC^2
+% components regardless of size. 
+adj.Rib        = 0; % Ratio of rib area to MAC^2
+adj.Monokote   = 0; % Ratio of Monokote area used to wetted area
+adj.Leading    = 0; % Ratio of leading edge skin arc length to MAC
+adj.Adhesion   = 0; % Ratio of adhesion skin arc to MAC
+adj.Winglet    = 0; % Ratio of winglet area to MAC^2
 adj.RibControl = 0; % Ratio of control surface rib area to MAC^2
 
+adj.EmpConnectBoom
+
 %% Aero Component Mass Calculations
-loadWing = 0.5 * lfMTOW * weight;
+loadWing     = 0.5 * lfMTOW * weight;
 loadHorzTail = 0;
 loadVertTail = 0;
 
-massWing = CalcWing (MAC_Wing, spanWing, adj, rho, num, loadWing);
-massHorzTail = CalcWing (MAC_HorzTail, span, adj, rho, num, loadHorzTail);
-massVertTail = CalcWing (MAC_VertTail, span, adj, rho, num, loadVertTail);
+massWing  = CalcWing (MAC_Wing, spanWing, adj, rho, num, loadWing);
+massHTail = CalcWing (MAC_HorzTail, span, adj, rho, num, loadHorzTail);
+massVTail = CalcWing (MAC_VertTail, span, adj, rho, num, loadVertTail);
 
 %% Fuselage
 % To include the fuselage section, connection to empennage (boom or
 % extended bulkheads), and landing gear
 
-%% Powerplant
+%{
+Inputs:
+- lengthFullBox = fuselage length until taper
+- aircraft length
+- fuselage width, assuming box
+- boolBoom = set to true if we are making a boom connection to empennage
+
+Undetermined:
+- widthFusEnd
+- taperAngle = angle at which the fuselage tapers. Could be high of 20 deg.
+%}
+
+% Full width section of fuselage mass estimation
+massFullBoxBulk = lengthFullBox * spacingBulk * widthFus^2 * 0.003175 * rho.Ply;
+
+% Taper section of fuselage mass estimation
+lengthTaper = widthFus / tand(taperAngle);
+numBulkTaper = spacingTaper * lengthTaper;
+widthDif = widthFus - widthFusEnd;
+widthIncrement = widthDif / numBulkTaper;
+massTaperBulk = widthBoom^2 * 0.003175 * rho.Ply;
+if numBulkTaper > 1
+    for i = 2 : numBulkTaper
+        largerWidth = widthFusEnd + (i - 1) * widthIncrement;
+        massTaperBulk = massTaperBulk + largerWidth^2 * 0.003175 * rho.Ply; % Adjust for boom hole or lightening hole, either as a percent reduction or a spec. width
+    end
+end
+
+% massFus = straight bulkhead method until taper then taper bulkheads
+massBulks = massFullBoxBulk + massTaperBulk;
+massFloors = 0; 
+massPlates = 0; % 4 for wing, 5 small for motor
+massLongerons = 0; % Assume 4 corners, 2 keel beams, 4 sides
+massFus = massBulks + massFloors + massPlates + massLongerons;
+
+% massEmpConnectBoom = massBoom + massHardware
+% massEmpConnectExt  = bulkhead taper method + hardware
+% massGear = 3*(wheel+axle+strut/structure+reinforcement)
+massFus = massFus + massEmpConnect + massGear;
+
+%% Propulsion
+
+massProp = inputs;
 
 %% Summations
-% Total Mass = Wing + HTail + VTail + Fuselage + Powerplant + Mission
-% Payload
+
+massEmpty = massWing + massHTail + massVTail + massFus + massProp;
+
+%% Functions
 
 function massWing = CalcWing (MAC, span, adj, rho, num, load)
-%% Wing
     % Inputs:
     % - MAC
     % - num
