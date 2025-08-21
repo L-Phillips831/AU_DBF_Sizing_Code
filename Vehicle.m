@@ -7,11 +7,8 @@ classdef Vehicle
     properties
         components struct                           % struct of components
         Propulsion (1,1) powerplant.Propulsion
-        
-    end
 
-    properties (Access = private)
-        Weight (1,1) double
+        mass (1,1) double
         Cl_alpha (1,1) double
         CM_alpha (1,1) double
         CD_0 (1,1) double
@@ -30,20 +27,8 @@ classdef Vehicle
 
         end
 
-        % Method for retrieving aircraft weight.
-        % Params:
-        %   - None
-        % Returns:
-        %   - Aircraft Weight
-        function weight = get_vehicle_weight(obj)
+        
 
-            if ~isempty(obj.Weight)
-                weight = obj.Weight;
-            else 
-                error("Aircraft Weight has not been determined");
-            end
-
-        end
         
     end
 end

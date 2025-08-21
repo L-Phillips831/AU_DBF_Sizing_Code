@@ -2,8 +2,10 @@ classdef Mission_Builder
 
     properties (Access = private)
          n_laps (1,1) uint16                % Total number of laps to be flown in the mission.
-         vehicle (1,1) vehicle              % Vehicle object containing aircraft information.
+         vehicle (1,1) Vehicle              % Vehicle object containing aircraft information.
          segments mission.Mission_Segment   % Heterogenous array of mission segment objects
+         num_timesteps (1,1) double         % Number of timesteps for the mission segments to be split into
+    
     end
 
     methods (Access = public)
@@ -15,9 +17,10 @@ classdef Mission_Builder
         %   - vehicle: vehicle object containing relevant informataion of
         %              the current aircraft sizing and geometry.
         %
-        function obj = Mission_Builder(n_laps_, vehicle_)
+        function obj = Mission_Builder(n_laps_, vehicle_, num_timesteps_)
             obj.n_laps = n_laps_;
             obj.vehicle = vehicle_;
+            obj.num_timesteps = num_timesteps_;
 
         end
 
