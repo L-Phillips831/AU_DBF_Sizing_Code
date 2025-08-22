@@ -64,6 +64,16 @@ classdef Lifting_Surface < Component & handle
                 
         end
 
+        function obj = get_2D_performance(obj, cruise_v)
+            
+            if obj.airfoil_str == ""
+                error("Airfoil is not set. Unable to get performance.")
+            end
+
+
+
+        end
+
         function CL_alpha = get_CL_alpha_sub(obj, M)
 
             AR_ = obj.AR;

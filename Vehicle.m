@@ -27,9 +27,48 @@ classdef Vehicle
 
         end
 
-        
+        % Method to get the Cl_alpha of the entire aircraft. Serves as a
+        % wrapper function for avl related methods.
+        % Params:
+        %   - none
+        % Returns:
+        %   - updated vehicle object
+        %
+        function obj = get_Cl_alpha(obj)
 
+        end
         
     end
+
+    methods (Access = private)
+
+        function filepath = generate_geom_file(obj)
+
+        end
+
+        function [filepath, num_cases] = generate_case_file(alpha_range)
+
+        end
+
+        function filepath = generate_cmd_file(geom_file, case_file, num_cases, results_file)
+
+        end
+
+        function obj = parse_avl(results_path)
+
+        end
+
+    end
+
+    methods (Static)
+
+        function results = run_avl(cmd_file)
+
+        end
+
+    end
+
+    
+
 end
 
