@@ -1,4 +1,4 @@
-classdef Lifting_Surface < Component
+classdef Lifting_Surface < Component & handle
     % The Aero class is used for constructing a preliminary aerodynamic
     % buildup by component according to Raymer's method. The main outputs
     % of this class are the drag polar and CL_max of the geometry which are
@@ -12,22 +12,56 @@ classdef Lifting_Surface < Component
         sweep (1,1) double
         x_loc (1,1) double
         z_loc (1,1) double
+        y_loc (1,1) double
+        rotation (1,1) double
+
+        airfoil_str string
+        Cl_alpha (1,1) Double
+        Cl_max (1,1) Double
 
     end
     
     methods (Access = public)
-        % Default constructor of the Aero class.
+        % Default constructor of the Lifting surface class.
         % Params:
-        %   - vehicle: the vehicle object containing the important
-        %              information about the current design iteration
+        %   - S_: Double reference area
+        %   - AR_: Double aspect ratio
+        %   - span_: Double span
+        %   - taper_: Double taper ratio
+        %   - sweep_: Double sweep
+        %   - airfoil_: String name of airfoil
+        % Returns:
+        %   - updated object
         %
-        function obj = Lifting_Surface(S_, AR_, span_, taper_, sweep_)
+        function obj = Lifting_Surface(S_, AR_, span_, taper_, sweep_, airfoil_)
            obj.S = S_;
            obj.AR = AR_;
            obj.span = span_;
            obj.taper = taper_;
            obj.sweep = sweep_;
+           obj.airfoil_str = airfoil_;
            
+        end
+
+
+        % Method to set the placement and orientation of a lifting surface. Used for
+        % aero buildup and stability calculations. X loc is measuered
+        % relative to datum, y and z loc measured relative to fuselage centerline
+        % rotation relative to x-y plane and rotating about x axis
+        % Params:
+        %   - x_loc_: Double x location
+        %   - y_loc_: Double y location
+        %   - z_loc_: Double z location
+        %   - rot_: Double rotation angle
+        %  Returns:
+        %   - updated object
+        %
+        function obj = place_surface(x_loc_, y_loc_, z_loc_, rot_)
+            obj.x_loc = x_loc_;
+            obj.z_loc = z_loc_;
+            obj.y_loc = y_loc_;
+            obj.rotation = rot_;
+                
         end
 
         function CL_alpha = get_CL_alpha_sub(obj, M)

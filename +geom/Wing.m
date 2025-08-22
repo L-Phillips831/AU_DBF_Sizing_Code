@@ -4,12 +4,15 @@ classdef Wing < geom.Lifting_Surface
     
     properties
         end_geom (1,1) boolean
+        
 
     end
     
     methods
-        function obj = Wing(S_, AR_, span_, taper_, sweep_)
-            obj = Lifting_Surface(S_, AR_, span_, taper_, sweep_);
+        
+        function obj = Wing(S_, AR_, span_, taper_, sweep_, airfoil_)
+            obj = Lifting_Surface(S_, AR_, span_, taper_, sweep_, airfoil_);
+
         end
         
         function cl_alpha = get_wing_cl_alpha(obj,M)
