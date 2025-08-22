@@ -5,6 +5,7 @@ classdef Lifting_Surface < Component & handle
     % then used for energy absorbtion analysis.
     
     properties
+        name string
         S (1,1) double
         AR (1,1) double
         span (1,1) double
@@ -33,8 +34,9 @@ classdef Lifting_Surface < Component & handle
         % Returns:
         %   - updated object
         %
-        function obj = Lifting_Surface(S_, AR_, span_, taper_, sweep_, airfoil_)
-           obj.S = S_;
+        function obj = Lifting_Surface(name_, S_, AR_, span_, taper_, sweep_, airfoil_)
+           obj.name = name_;
+            obj.S = S_;
            obj.AR = AR_;
            obj.span = span_;
            obj.taper = taper_;
@@ -64,13 +66,15 @@ classdef Lifting_Surface < Component & handle
                 
         end
 
-        function obj = get_2D_performance(obj, cruise_v)
-            
-            if obj.airfoil_str == ""
-                error("Airfoil is not set. Unable to get performance.")
-            end
-
-
+        % Method to convert the object properties to the section that would
+        % appear in an AVL geometry input file. Lines are separated as
+        % elements in a string array.
+        % Params:
+        %   - current obj
+        % Returns:
+        %   - str
+        %
+        function str = convert_to_avl_geom(obj)
 
         end
 
