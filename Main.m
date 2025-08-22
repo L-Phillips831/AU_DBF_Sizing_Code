@@ -15,7 +15,7 @@ ga_settings.generations = 5;                         % Define the number of gene
 GA_optimizer = optimizer.GA_Optimizer(ga_settings);  % Create optimizer object       
 
 
-% [best_score, best_params] = GA_optimizer.run(@MOG_Solver);
+[best_score, best_params] = GA_optimizer.run(@MOG_Solver);
 MOG_Solver([])
 
 

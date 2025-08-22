@@ -10,6 +10,8 @@ classdef Lifting_Surface < Component
         span (1,1) double
         taper (1,1) double
         sweep (1,1) double
+        x_loc (1,1) double
+        z_loc (1,1) double
 
     end
     
@@ -20,7 +22,11 @@ classdef Lifting_Surface < Component
         %              information about the current design iteration
         %
         function obj = Lifting_Surface(S_, AR_, span_, taper_, sweep_)
-           
+           obj.S = S_;
+           obj.AR = AR_;
+           obj.span = span_;
+           obj.taper = taper_;
+           obj.sweep = sweep_;
            
         end
 
