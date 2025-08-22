@@ -13,6 +13,18 @@ buildup, for now, is suited for conventional configuration aircraft
 % Need Logan's MATLAB expertise to format
 
 %{
+To Do:
+- Add logic to differentiate control surface and rib adjustments for
+differing %MAC control surfaces. Model after last year? Is this necessary?
+- Add material densities
+- Figure out rib spacing according to load/lf, skin support, and AR
+- Figure out bulkhead spacing from a historical average
+- Add adjustment values from CAD or measurements
+- Brainstorm how wing/tail surfaces may need to have different function
+inputs
+- Brainstorm how to obtain tail loadings
+- Continue building out gear and fuselage hardware mass estimations
+
 Inputs:
 - All Aero MACs
 - All Aero spans
@@ -35,13 +47,18 @@ rho.Monokote = 0; % A 2D Density [g/m^2]
 % experimental averages of real components. Should roughly apply to all
 % components regardless of size. 
 adj.Rib        = 0; % Ratio of rib area to MAC^2
-adj.Monokote   = 0; % Ratio of Monokote area used to wetted area
-adj.Leading    = 0; % Ratio of leading edge skin arc length to MAC
-adj.Adhesion   = 0; % Ratio of adhesion skin arc to MAC
-adj.Winglet    = 0; % Ratio of winglet area to MAC^2
-adj.RibControl = 0; % Ratio of control surface rib area to MAC^2
+adj.Monokote   = 1.1; % Ratio of Monokote area used to wetted area
+adj.Leading    = 0.2; % Ratio of leading edge skin arc length to MAC
+adj.Adhesion   = 0.6; % Ratio of adhesion skin arc to MAC
+adj.Winglet    = 0.5; % Ratio of winglet area to MAC^2
+adj.RibControl = 0; % Ratio of control surface rib area to MAC^2, assuming 25% chord
+adj.Panel      = 0; % Ratio of access panel PLA mass to access panel area
 
 adj.EmpConnectBoom
+
+%% Spacings
+% Define the general spacing distances between ribs, bulkheads, etc
+spacing.Taper = 0;
 
 %% Aero Component Mass Calculations
 loadWing     = 0.5 * lfMTOW * weight;
@@ -62,6 +79,8 @@ Inputs:
 - aircraft length
 - fuselage width, assuming box
 - boolBoom = set to true if we are making a boom connection to empennage
+- widthFus = fuselage width, accounting for internal components and
+structural margin
 
 Undetermined:
 - widthFusEnd
@@ -72,23 +91,24 @@ Undetermined:
 massFullBoxBulk = lengthFullBox * spacingBulk * widthFus^2 * 0.003175 * rho.Ply;
 
 % Taper section of fuselage mass estimation
-lengthTaper = widthFus / tand(taperAngle);
-numBulkTaper = spacingTaper * lengthTaper;
-widthDif = widthFus - widthFusEnd;
-widthIncrement = widthDif / numBulkTaper;
-massTaperBulk = widthBoom^2 * 0.003175 * rho.Ply;
+lengthTaper = widthFus / tand(taperAngle);  % Length based on width and angle
+numBulkTaper = spacing.Taper * lengthTaper; % spacing defines #bulkheads
+widthDif = widthFus - widthFusEnd;          % the width difference the taper needs to cover
+widthIncrement = widthDif / numBulkTaper;   % increment of width covered by each bulkhead
+massTaperBulk = ((widthFusEnd + 0.0127)^2 - widthFusEnd^2) * 0.003175 * rho.Ply; % First taper bulkhead mass, 0.5" larger than the boom/lightening hole width
 if numBulkTaper > 1
     for i = 2 : numBulkTaper
         largerWidth = widthFusEnd + (i - 1) * widthIncrement;
-        massTaperBulk = massTaperBulk + largerWidth^2 * 0.003175 * rho.Ply; % Adjust for boom hole or lightening hole, either as a percent reduction or a spec. width
+        massTaperBulk = massTaperBulk + (largerWidth^2 - widthFusEnd^2) * 0.003175 * rho.Ply; % What about for an extended taper where lightening is not the spar diameter?
     end
 end
 
 % massFus = straight bulkhead method until taper then taper bulkheads
 massBulks = massFullBoxBulk + massTaperBulk;
 massFloors = 0; 
-massPlates = 0; % 4 for wing, 5 small for motor
+massPlates = 0; % 4 for wing structure, 5 small for motor
 massLongerons = 0; % Assume 4 corners, 2 keel beams, 4 sides
+massPanels = widthFus * lengthFullBox * adj.Panel;
 massFus = massBulks + massFloors + massPlates + massLongerons;
 
 % massEmpConnectBoom = massBoom + massHardware
