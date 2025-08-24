@@ -28,7 +28,6 @@ inputs
 Inputs:
 - All Aero MACs
 - All Aero spans
-- propulsion mass
 
 Undetermined:
 num structure for each aero surface
@@ -61,7 +60,7 @@ adj.EmpConnectBoom
 spacing.Taper = 0;
 
 %% Aero Component Mass Calculations
-loadWing     = 0.5 * lfMTOW * weight;
+loadWing     = 0.5 * lfMTOW * MTOW; % Load on one wing
 loadHorzTail = 0;
 loadVertTail = 0;
 
