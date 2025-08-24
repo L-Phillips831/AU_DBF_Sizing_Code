@@ -9,8 +9,7 @@ classdef Component < matlab.mixin.Heterogeneous
     
     methods (Abstract)
         
-        mass = mass_buildup(obj, varargin)
-        aero = aero_buildup(obj, varargin)
+        mass = get_mass(obj, varargin)
 
     end
 end

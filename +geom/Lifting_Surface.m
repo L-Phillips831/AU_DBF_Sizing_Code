@@ -108,57 +108,7 @@ classdef Lifting_Surface < Component & handle
 
         end
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        function CL_alpha = get_CL_alpha_sub(obj, M)
-
-            AR_ = obj.AR;
-            M_ = M;
-            eta_ = 0.95;        % Approximation of lift curve slope w/ M recommended by Raymer.
-            lambda_max_t = 0;   % Assuming rectangular geometry with no sweep
-
-            % Effect of wing ending geom
-            if isfield(obj.geom, 'EndGeom')
-                endplate = obj.geom.EndGeom;
-                if endplate.style == "Endplate"
-                    AR_ = AR_*(1 + 1.9*endplate.h/endplate.b);
-
-                elseif endplate.style == "Winglet"
-                    AR_ = AR_*(1 + endplate.h/endplate.b)^2;
-                end
-
-            end
-
-            Beta = sqrt(1-M_^2);
-            fuse_effects = 0.98;  % Raymer estimation of fuselage effects
-            CL_alpha =  2*pi*AR_ / (2 + sqrt(4 + AR_^2*Beta^2 / eta_^2 * (1 + tan(lambda_max_t)^2/Beta^2))) * fuse_effects;
-
-
-        end
-
-
-
     end
 
-    methods (Static)
-        function [SM, NP, flag] = check_long_stab(wing_geom, tail_geoms)
-
-        end
-
-    end
 end
 
