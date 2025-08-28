@@ -40,19 +40,16 @@ vLOF = 1.3 * vStall;
 
 % hDotClimb = from vClimb, determine the hDot that would be achieved at
 % vClimb
-fpaTest = linspace(0, fpaMax, 50);
-aoaTest = linspace(0, aoaMax, 50);
-vTest   = linspace(0, vMax, 50);
-for h = 1 : nVals % fpa iterations
-    fpa = fpaTest(h);
-    for i = 1 : nVals % aoa iterations
-        aoa = aoaTest(i);
-        CL  = CL0 + CL_Alpha * aoa;
-        CD  = CD0 + k * CL^2;
-        for j = 1 : nVals % v iterations
-            v = vTest(j);
-            thrust = CalcMaxThrust(v);
-            D = 0.5 * rho * v^2 * CD;
-        end
+aoaTest = linspace(0, aoaMax, nVals);
+vTest   = linspace(0, vMax, nVals);
+for i = 1 : nVals % aoa iterations
+    aoa = aoaTest(i);
+    CL = CL0 + CL_Alpha * aoa;
+    CD = CD0 + k*CL^2;
+    for j = 1 : nVals % v iterations
+        v = vTest(j);
+        thrust = ThrustCalc(v);
+        hDot   = (thrust - 0.5*rho*v^2 * CD * Sref)*v / weight;
+        vGround 
     end
 end
