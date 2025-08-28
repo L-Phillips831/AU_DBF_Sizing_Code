@@ -1,4 +1,4 @@
-classdef Vehicle
+classdef Vehicle < handle
     % The vehicle class is the output class of the MOG sizing codebase
     % that contains all pertinant information regarding the current
     % iteration of the design. Multiple vehicle objects will be created by
@@ -7,7 +7,7 @@ classdef Vehicle
     properties
         name string                                     % Vehicle Name
         components geom.Component                       % struct of components
-        Propulsion (1,1) powerplant.Propulsion          % Propulsion system
+        % Propulsion (1,1) powerplant.Propulsion          % Propulsion system
         CG (3,1) double                                 % X,Y,Z loc of CG [m]
 
         W_S (1,1) double
@@ -44,50 +44,114 @@ classdef Vehicle
         % Params:
         %   - 
         %
-        function obj = Vehicle(params, constraints)
+        function obj = Vehicle(name_, W_S_, mass_, HT_coeff_, VT_Coeff_)
+            obj.name = name_;
+            obj.W_S = W_S_;
+            obj.mass = mass_;
+            obj.HT_coeff = HT_coeff_;
+            obj.VT_coeff = VT_Coeff_;
+
 
         end
         
 
-        function obj = add_wing(obj, x_loc_q4_, z_loc_, AR_, root_chord_, taper_, sweep_, airfoil_)
+        % Method for adding the main wing to the vehicle component list.
+        % Params: 
+        %   - x_loc_q4_: double location of quarter chord relative to nose
+        %   - z_loc_: double location of wing centerline relative to
+        %             fuselage centerline
+        %   - AR_: double wing aspect ratio
+        %   - taper_: double wing taper ratio. Defined as c_tip / c_root
+        %   - sweep_: double angle of constant wing sweep
+        %   - airfoil_: string name of airfoil 
+        % Returns:
+        %   - updated vehicle object with component addition
+        %
+        function obj = add_wing(obj, x_loc_q4_, z_loc_, AR_, taper_, sweep_, airfoil_)
             wing_area = obj.mass / obj.W_S;
             wing_span = sqrt(AR_ * wing_area);
+            root_chord_ = wing_area / 0.5 / wing_span / (1 + taper_);
 
-            airfoil_str = fullfile("+lib\Airfoils\", airfoil_, ".dat");
+            airfoil_str = fullfile("Airfoils\", sprintf("%s.dat",airfoil_));
 
             x_loc_ = x_loc_q4_ - 0.25*root_chord_;
 
-            wing = geom.Lifting_Surface("Wing", wing_area, AR_, wing_span, root_chord_, taper_, sweep_, airfoil_str);
+            wing = geom.Lifting_Surface("Wing", wing_area, AR_, root_chord_, wing_span, taper_, sweep_, "Standard", airfoil_str);
             wing.place_surface(x_loc_, 0, z_loc_, 0);
 
-            obj.components = [obj.components, wing];
+            obj.components(end+1) = wing;
 
             obj.aircraft_length = x_loc_q4_ / 0.4;
+            obj.S_ref = wing_area;
+            obj.c_ref = root_chord_;
+            obj.b_ref = wing_span;
         end
 
 
+        % Method for adding HT to vehicle component list. Assumed
+        % rectangular body
+        % Params:
+        %   - AR_: double aspect ratio
+        %   - airfoil_: string airfoil name
+        % Returns:
+        %   - updated vehicle object with component addition
+        %
         function obj = add_HT(obj, AR_, airfoil_)
-            L_HT = obj.aircraft_length * 0.6;
+            L_HT = obj.aircraft_length * 0.6;  % Raymer assumption of L_HT
             S_HT = obj.S_ref * obj.c_ref * obj.HT_coeff / L_HT;
             span = sqrt(AR_ * S_HT);
             chord = AR_ / span;
 
             x_loc_ = obj.aircraft_length - (0.25*chord);
 
-            airfoil_str = fullfile(airfoil_str = fullfile("+lib\Airfoils\", airfoil_, ".dat");
+            airfoil_str = fullfile("Airfoils\", sprintf("%s.dat",airfoil_));
 
-            HT = geom.Lifting_Surface("HT", S_HT, AR_, span, chord, 1, 0, airfoil_str);
+            HT = geom.Lifting_Surface("HT", S_HT, AR_, span, chord, 1, 0, "Standard", airfoil_str);
             HT.place_surface(x_loc_, 0, 0, 0);
 
-            obj.components = [obj.components, HT];
+            obj.components(end+1) = HT;
             
         end
 
-        function obj = add_VT(obj)
+
+        % Method for adding VT to vehicle component list.
+        % Params:
+        %   - AR_: double aspect ratio
+        %   - taper_: double taper ratio
+        %   - y_loc_: double y location relative to body x-z plane
+        %   - airfoil_: string airfoil name
+        % Returns:
+        %   -  updated vehicle object with added component
+        %
+        function obj = add_VT(obj, AR_, taper_, y_loc_, airfoil_)
+            L_VT = obj.aircraft_length * 0.6;   % Let L_VT = L_HT for now
+            S_VT = obj.S_ref * obj.b_ref * obj.VT_coeff / L_VT;
+            span = sqrt(AR_ * S_VT);
+            root_chord_ = S_VT / 0.5 / span / (1 + taper_);
+
+            x_loc_ = obj.aircraft_length - (0.25*root_chord_);
+
+            airfoil_str = fullfile("Airfoils\", sprintf("%s.dat",airfoil_));
+
+            VT = geom.Lifting_Surface("VT", S_VT, AR_, span, root_chord_, taper_, 0, "Fin", airfoil_str);
+            VT.place_surface(x_loc_, y_loc_, 0, 0);
+
+            obj.components(end+1) = VT;
 
         end
 
+
+        % Method for adding a fuselage to the component list.
+        % Params:
+        %   - length: double fuselage length
+        %   - diameter: double fuselage diameter
+        % Returns:
+        %   - updated vehicle object with added component
+        %
         function obj = add_fuselage(obj, length, diameter)
+            fuselage = geom.Fuselage(length, diameter, "Fuselage");
+
+            obj.components(end+1) = fuselage;
 
         end
 
@@ -103,16 +167,17 @@ classdef Vehicle
         function obj = analyze_airframe(obj)
 
             % Weight Buildup
-            for component = obj.components
-                component.get_mass();
-                obj.mass = obj.mass + component.mass;
-            end
+            % for component = obj.components
+            %     component.get_mass();
+            %     obj.mass = obj.mass + component.mass;
+            % end
 
             % Aero Buildup
-            alpha_range = -6:2:20;
+            % alpha_range = -6:2:20;
+            alpha_range = 2;
             obj.generate_geom_file();
-            obj.generate_case_file(alpha_range);
-            saved_files = obj.generate_cmd_file();
+            num_cases = obj.generate_case_file(alpha_range);
+            saved_files = obj.generate_cmd_file(num_cases);
             Vehicle.run_avl(obj.cmd_file);
             obj.parse_avl(saved_files);
 
@@ -146,6 +211,7 @@ classdef Vehicle
 
 
             str = [
+                    obj.name,...
                     "#Mach",...
                     "0.0",...    
                     "#IYsym   IZsym   Zsym",...
@@ -187,7 +253,7 @@ classdef Vehicle
             for i = 1:num_cases
               new_str = [
                          "----------------------------------------------",...
-                         sprintf("Run case %f: - unnamed", i),...
+                         sprintf("Run case %1.0f: - unnamed", i),...
                          "",...
                          sprintf("alpha        ->  alpha       =   %.5f", alpha_range(i)),...
                          "beta         ->  beta        =   0.00000",...    
@@ -234,7 +300,7 @@ classdef Vehicle
 
             for i = 1:num_cases
 
-                current_save = fullfile(obj.saves_dir, sprintf("Case_%s.txt", i));
+                current_save = fullfile(obj.saves_dir, sprintf("Case_%1.0f.txt", i));
 
                 if exist(current_save, 'file')
                     delete(current_save);
@@ -300,7 +366,7 @@ classdef Vehicle
         Cl_fit = polyfit(alpha_arr, CL_arr, 1); obj.Cl_alpha = Cl_fit(1);
         CM_fit = polyfit(alpha_arr, Cm_arr, 1); obj.CM_alpha = CM_fit(1);
         CD_fit = polyfit(CL_arr, CD_arr, 2); 
-        obj.K2 = CD_fit(1); obj.K1 = CD_fit(2); obj.CD_0 = CD_fit(3); 
+        obj.K2 = CD_fit(1); obj.K1 = CD_fit(2); 
 
         obj.SM = -obj.CM_alpha / obj.Cl_alpha;
         
@@ -313,7 +379,7 @@ classdef Vehicle
 
         function run_avl(cmd_file)
 
-            system(sprintf('cd "+lib\+AVL" && avl < "%s"', cmd_file)); 
+            system(sprintf('"+lib/+AVL/avl" < "%s"', cmd_file)); 
 
         end
 

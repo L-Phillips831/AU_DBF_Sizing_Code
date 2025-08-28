@@ -1,4 +1,4 @@
-classdef Fuselage
+classdef Fuselage < geom.Component
     %FUSELAGE Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -44,6 +44,10 @@ classdef Fuselage
             S_wet = 4*pi*obj.diam/2 * obj.length;
             obj.CD_0 = FF * Cf * S_wet/S_ref;
 
+        end
+
+        function str = convert_to_avl_geom(obj)
+            str  = "";
         end
     end
 end
