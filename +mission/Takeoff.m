@@ -11,11 +11,8 @@ classdef Takeoff < mission.Mission_Segment
         % TAKEOFF Construct an instance of this class
         %{
         - Will have ground run, rotation, transition
-        - Rotation discretized over both vLOF and aoaLOF
-        - transition discretized over aoaLOF to aoaClimb and vLOF to vClimb
         - Does not account for sloped runway
-        - Need propulsion equations
-        - Need CL calculation from aoa
+        - Does not account for wind speed
         %}
 
 
@@ -32,13 +29,13 @@ classdef Takeoff < mission.Mission_Segment
             CD0  = obj.CD0;
             rho  = obj.rho;
             g = obj.g;
-            aoaSet = obj.aoaSet;
+            aoaSet = obj.aoaSet; % aoa at forward ground run
             grFriction = obj.grFriction;
             mass = tab.mass(end);
             nVals   = obj.nVals;
 
             numParts  = 3;                                                  % Ground run, rotation, transition
-            tTrans = 2;                                                % time (s) it takes to transition from fpa 0 to fpaClimb and vLOF to vClimb
+            tTrans = 2;     % time (s) it takes to transition from fpa 0 to fpaClimb and vLOF to vClimb. May need some logic to be iteratively increased if throttle is above 1
 
             % Initialize table variables
             t       = zeros(numParts*nVals, 1);
@@ -63,7 +60,7 @@ classdef Takeoff < mission.Mission_Segment
             dt = zeros(numParts*nVals,1);
 
             % Ground run
-            vGround(1:nVals) = linspace(0, vRot, nVals);              % Discretization for GR
+            vGround(1:nVals) = linspace(0, vRot, nVals);
             v(1:nVals)       = vGround(1:nVals);
             aoa(1:nVals)     = aoaSet;                                        
             h(1:nVals)       = zeros(nVals, 1);                             
@@ -113,28 +110,38 @@ classdef Takeoff < mission.Mission_Segment
             vGroundClimb = sqrt(vClimb^2 - hDotClimb^2);                    % Ground speed at end of discretization
             fpaClimb     = atan2(hDotClimb, vGroundClimb);                  % fpa at end of discretization
             fpaTrans          = linspace(0, fpaClimb, nVals);                  % Assume constant transition rate
-            vGround(2*nVals+1 : nVals*3) = v(2*nVals+1 : nVals*3) .* cos(fpaTrans);
             dtTrans = tTrans / (nVals - 1);
-            t(2*nVals+1 : nVals*3) = t(2*nVals) : dtTrans : (t(2*nVals) + dtTrans);
             dvTrans = v(2*nVals + 2) - v(2*nVals + 1);
-            a(2*nVals+1 : nVals*3) = ones(nVals, 1) * dvTrans/dtTrans;
-            a_X = a(2*nVals+1 : nVals*3) * cos(fpaTrans(2*nVals+1 : nVals*3));
-            a_Y = a(2*nVals+1 : nVals*3) * sin(fpaTrans(2*nVals+1 : nVals*3));
-            hDot(2*nVals+1 : nVals*3) = v(2*nVals+1 : nVals*3).*sin(fpaTrans);
-            T_cos_aoa = mass*a_X + L*sin(fpaTrans()) - D*cos(fpaTrans());
-            T_sin_aoa = mass*a_Y + mass*g + D*sin(fpaTrans()) - L*cos(fpaTrans());
-            % aoa = atan(T*sin(aoa)/(T*cos(aoa))
-            % T = T_cos_aoa / cos(aoa)
-            % Get throttle from T and v
-            % Check that throttle is not above 1. If so, lengthen
-            % transition.
-
-            aoa(2*nVals+1 : nVals*3) = 0; % Correct
-
-        for i = 1:nVals
-            h(i) = integrateHDot; % Do this
-            % t Energy pUse d a h hDot thrust q CL CD L D LD
-        end
+            
+            for i = 2*nVals+1 : nVals*3
+            vGround(i) = v(i) .* cos(fpaTrans(i));
+            hDot(i) = v(i).*sin(fpaTrans(i));
+            a(i) = ones(nVals, 1) * dvTrans/dtTrans;
+            a_X = a(i) * cos(fpaTrans(i));
+            a_Y = a(i) * sin(fpaTrans(i));
+            q(i) = 0.5*rho*v(i)^2;
+            CL(i) = CL(2*nVals); % Assume same CL as liftoff
+            CD(i) = CD(2*nVals); % Assume same CD as liftoff
+            LD(i) = CL(i) / CD(i);
+            L(i) = q(i) * CL(i) * Sref;
+            D(i) = q(i) * CD(i) * Sref;
+            T_cos_aoa = mass*a_X + L*sin(fpaTrans(i)) - D*cos(fpaTrans(i));
+            T_sin_aoa = mass*(a_Y +g) + D*sin(fpaTrans(i)) - L*cos(fpaTrans(i));
+            aoa(i) = atan(T_sin_aoa/T_cos_aoa);
+            thrust(i) = T_cos_aoa(i) / cos(aoa(i));
+            [throttle(i), pUse(i)] = GetThrottle(thrust(i), v(i)); % Not the proper function call.
+            % Check that throttle is not above 1. If so, lengthen transition.
+            if i > 2*nVals + 1
+                t(i) = t(i-1) + dtTrans;
+                Energy(i) = Energy(i-1) + pUse(i)*dtTrans;
+            else
+                t(i) = t(i-1);
+                Energy(i) = Energy(i-1);
+            end
+            h(i) = cumtrapz(t, hDot);
+            d(i) = d(2*nVals) + cumtrapz(t(2*nVals+1:i), vGround(2*nVals+1:i));
+            
+            end
 
         % New structure/table
             Snew.Time   = t;
