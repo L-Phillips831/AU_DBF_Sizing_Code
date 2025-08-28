@@ -17,9 +17,9 @@ classdef Takeoff < mission.Mission_Segment
 
 
         % To Do:
-        % - Distinguish ground velocity from velocity
+        % - Make sure that thrust, lift, drag, and weight act in their
+        % respective directions for ground run + rotation
         % - Put in the correct thrust/propulsion functions
-        % - Add logic for transition
 
 
         % General variables
