@@ -1,4 +1,4 @@
-classdef Lifting_Surface < Component & handle
+classdef Lifting_Surface < geom.Component & handle
     % The Aero class is used for constructing a preliminary aerodynamic
     % buildup by component according to Raymer's method. The main outputs
     % of this class are the drag polar and CL_max of the geometry which are
@@ -35,10 +35,11 @@ classdef Lifting_Surface < Component & handle
         % Returns:
         %   - updated object
         %
-        function obj = Lifting_Surface(name_, S_, AR_, span_, taper_, sweep_, airfoil_)
+        function obj = Lifting_Surface(name_, S_, AR_, chord_, span_, taper_, sweep_, airfoil_)
            obj.name = name_;
             obj.S = S_;
            obj.AR = AR_;
+           obj.chord = chord_;
            obj.span = span_;
            obj.taper = taper_;
            obj.sweep = sweep_;
@@ -101,10 +102,42 @@ classdef Lifting_Surface < Component & handle
                    "#-------------------------------------------------------------",...
                    "SECTION",...
                    "#Xle    Yle    Zle     Chord   Ainc  Nspanwise  Sspace",...
-                   sprintf("%.1f %.1f %.1f %.1f %.1f %.1f %.1f", 0, obj.span/2, 0, tip_chord, 0, 0, 0),...
+                   sprintf("%.1f %.1f %.1f %.1f %.1f %.1f %.1f", obj.chord - tip_chord, obj.span/2, 0, tip_chord, 0, 0, 0),...
                    "AFILE",...
                    obj.airfoil_str,...
                    ];
+
+        end
+
+        function obj = get_parasitic_drag(obj, airspeed, S_ref)
+
+            wing_lam_length = 0.5;      % Percent of laminar flow over lifting surface
+            rho_air = 1.225;            % Air density [kg/m^3]
+            air_dyn_visc = 1.81e-5;     % Air dynamic viscocity [Pa*s]
+
+            %%% Flat plate coefficient 
+            % Laminar Section
+            Re_lam = rho_air * airspeed * (wing_lam_length * obj.length) / air_dyn_visc;
+            Cf_lam = 1.328/(Re_lam^0.5);
+
+            % Turbulent Section
+            Re_total = rho_air * airspeed * obj.length / air_dyn_visc;
+            Cf_turb = 0.074 / (Re_total^0.2) - 0.074 / (Re_lam ^ 0.2);
+
+            Cf = Cf_turb + Cf_lam;
+
+            %%% Form Factor Calculation
+            wing_thickness = 0.14;  % Estimation of surface thickness based on previous airfoil choices
+            std_temp = 288.15; air_gamma = 1.4; air_R = 287;
+            a_air = sqrt(air_gamma * air_R * std_temp);
+            M = airspeed/a_air;
+
+            FF = (1 + 2*wing_thickness + 100*wing_thickness^4) * (1.34*M^0.18 * cosd(obj.sweep)^0.28);
+
+
+            %%% Parasitic Drag Buildup
+            S_wet = 2 * obj.S;  % Estimation of wetted area
+            obj.CD_0 = FF * Cf * S_wet/S_ref;
 
         end
 

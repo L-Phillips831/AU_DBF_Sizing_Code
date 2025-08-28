@@ -9,7 +9,7 @@ classdef Component < matlab.mixin.Heterogeneous
     
     methods (Abstract)
         
-        mass = get_mass(obj, varargin)
+        mass = get_parasitic_drag(obj, airspeed, S_ref);
 
     end
 end

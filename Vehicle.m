@@ -10,9 +10,14 @@ classdef Vehicle
         Propulsion (1,1) powerplant.Propulsion          % Propulsion system
         CG (3,1) double                                 % X,Y,Z loc of CG [m]
 
+        W_S (1,1) double
+
         S_ref (1,1) double                              % Vehicle reference area  [m]
         c_ref (1,1) double                              % Vehicle reference chord [m]
         b_ref (1,1) double                              % Vehicle reference span  [m]
+        HT_coeff (1,1) double
+        VT_coeff (1,1) double
+        aircraft_length (1,1) double
 
         mass (1,1) double                               % Vehicle mass  [kg]
         Cl_alpha (1,1) double                           % Vehicle Cl_alpha [-]
@@ -44,12 +49,45 @@ classdef Vehicle
         end
         
 
-        function obj = add_wing()
+        function obj = add_wing(obj, x_loc_q4_, z_loc_, AR_, root_chord_, taper_, sweep_, airfoil_)
+            wing_area = obj.mass / obj.W_S;
+            wing_span = sqrt(AR_ * wing_area);
 
+            airfoil_str = fullfile("+lib\Airfoils\", airfoil_, ".dat");
+
+            x_loc_ = x_loc_q4_ - 0.25*root_chord_;
+
+            wing = geom.Lifting_Surface("Wing", wing_area, AR_, wing_span, root_chord_, taper_, sweep_, airfoil_str);
+            wing.place_surface(x_loc_, 0, z_loc_, 0);
+
+            obj.components = [obj.components, wing];
+
+            obj.aircraft_length = x_loc_q4_ / 0.4;
         end
 
 
-        function obj = add_tail()
+        function obj = add_HT(obj, AR_, airfoil_)
+            L_HT = obj.aircraft_length * 0.6;
+            S_HT = obj.S_ref * obj.c_ref * obj.HT_coeff / L_HT;
+            span = sqrt(AR_ * S_HT);
+            chord = AR_ / span;
+
+            x_loc_ = obj.aircraft_length - (0.25*chord);
+
+            airfoil_str = fullfile(airfoil_str = fullfile("+lib\Airfoils\", airfoil_, ".dat");
+
+            HT = geom.Lifting_Surface("HT", S_HT, AR_, span, chord, 1, 0, airfoil_str);
+            HT.place_surface(x_loc_, 0, 0, 0);
+
+            obj.components = [obj.components, HT];
+            
+        end
+
+        function obj = add_VT(obj)
+
+        end
+
+        function obj = add_fuselage(obj, length, diameter)
 
         end
 
@@ -66,7 +104,8 @@ classdef Vehicle
 
             % Weight Buildup
             for component = obj.components
-                obj.mass = obj.mass + component.get_mass();
+                component.get_mass();
+                obj.mass = obj.mass + component.mass;
             end
 
             % Aero Buildup
@@ -76,6 +115,13 @@ classdef Vehicle
             saved_files = obj.generate_cmd_file();
             Vehicle.run_avl(obj.cmd_file);
             obj.parse_avl(saved_files);
+
+            airspeed = 30.48;   % airspeed [m/s]. Estimated based on 100 ft/s
+
+            for component = obj.components
+                component.get_parasitic_drag(airspeed, obj.S_ref);
+                obj.CD_0 = obj.CD_0 + component.CD_0;
+            end
 
         end
         
