@@ -18,9 +18,11 @@ classdef Vehicle < handle
         HT_coeff (1,1) double
         VT_coeff (1,1) double
         aircraft_length (1,1) double
+        L_HT (1,1) double
 
         mass (1,1) double                               % Vehicle mass  [kg]
         Cl_alpha (1,1) double                           % Vehicle Cl_alpha [-]
+        Cl_0 (1,1) double                               % Vehicle Cl_0 [-]
         CM_alpha (1,1) double                           % Vehicle CM_alpha [-]
         SM (1,1) double                                 % Vehicle Static Margin [-]
         CD_0 (1,1) double                               % Vehicle zero-lift drag coefficient [-]
@@ -100,6 +102,7 @@ classdef Vehicle < handle
         %
         function obj = add_HT(obj, AR_, airfoil_)
             L_HT = obj.aircraft_length * 0.6;  % Raymer assumption of L_HT
+            obj.L_HT = L_HT;
             S_HT = obj.S_ref * obj.c_ref * obj.HT_coeff / L_HT;
             span = sqrt(AR_ * S_HT);
             chord = S_HT / span;
@@ -193,6 +196,23 @@ classdef Vehicle < handle
             % Add landing gear drag penalty
             obj.CD_0 = obj.CD_0 + 0.01;  % Low fidelity estimation for now
             
+        end
+
+        % Method to get the alpha required to meet the specified lift
+        % coefficient.
+        %
+        function alpha = get_req_alpha(obj, CL_req_)
+
+            alpha = (CL_req_ - obj.Cl_0) / obj.Cl_alpha;
+        end
+
+
+        % Method to get the drag induced by the required lift coefficient 
+        %
+        function CD = get_CD(obj, CL_req_)
+
+            CD = obj.CD_0 + obj.K1 * CL_req_ + obj.K2 * CL_req_^2;
+
         end
         
     end
@@ -365,7 +385,7 @@ classdef Vehicle < handle
 
         
         [alpha_arr, sort_idx] = sort(alpha_arr);
-        CL_arr = CL_arr(sort_idx);
+        CL_arr = CL_arr(sort_idx); obj.Cl_0 = CL_arr(alpha_arr == 0);
         Cm_arr = Cm_arr(sort_idx);
         CD_arr = CD_arr(sort_idx);
 
@@ -385,9 +405,33 @@ classdef Vehicle < handle
     methods (Static)
 
 
-        function run_avl(cmd_file)
+        function [status, cmd_out] = run_avl(cmd_file)
 
             [status, cmd_out] = system(sprintf('"+lib/+AVL/avl" < "%s"', cmd_file)); 
+
+        end
+
+
+        % Method to obtain the DCM from Inertial to Body for a given set of
+        % Euler angles.
+        %
+        function BI = get_DCM_BI(ph, th, ps)
+
+            BI = [
+                  cosd(th)*cosd(ps)                                 cosd(th)*sin(ps)                                    -sind(th)
+                  sind(ph)*sind(th)*cosd(ps) - cosd(ph)*sind(ps)    sind(ph)*sind(th)*sind(ps) + cosd(ph)*cosd(ps)       sind(ph)*cosd(th)
+                  cosd(ph)*sind(th)*cosd(ps) + sind(ph)*sind(ps)    cosd(ph)*sind(th)*sind(ps) - sind(ph)*cosd(ps)       cosd(ph)*cosd(th)
+                  ];
+
+        end
+
+        % Method to reconcile the wind frame L and D into the corresponding
+        % body forces. Assumes no sideslip.
+        %
+        function [Fx_b, Fz_b] = reconcile_L_D(L, D, alpha)
+
+           Fx_b = +L*sind(alpha) - D*cosd(alpha);
+           Fz_b = -L*cosd(alpha) - D*sind(alpha);
 
         end
 
