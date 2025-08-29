@@ -95,7 +95,14 @@ classdef Cruise < mission.Mission_Segment
             a = (thrust(i) - D(i))/m; % Body
             % Body acceleration to NED accel
             % Integrate NED accel to NED vel
-            % Calculate dt(i) for how long the deltaV takes
+
+            a_Body = 0; % sum of forces
+            vbar = 0; % Make this start at vStart and become the average of current and previous
+            dt = (pos_NED(i, 1:2) - pos_NED(i, 1:2)) / vbar;
+            % update t = tStart and update with previous dt after i = 1
+            % update v = last V + dt*a
+            % Get thrust
+            % update a = sum of forces / mass
         end
 
         % Vectors: position, airspeed, groundspeed, eulers
