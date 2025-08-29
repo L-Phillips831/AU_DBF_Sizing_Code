@@ -32,7 +32,8 @@ classdef Fuselage < geom.Component
 
             % Turbulent Section
             Re_total = rho_air * airspeed * obj.length / air_dyn_visc;
-            Cf_turb = 0.074 / (Re_total^0.2) - 0.074 / (Re_lam ^ 0.2);
+            Cf_turb = 0.074 / (Re_total^0.2)
+            Cf_turb_lam = 0.074 / (Re_lam ^ 0.2)
 
             Cf = Cf_turb + Cf_lam;
 
@@ -42,7 +43,7 @@ classdef Fuselage < geom.Component
 
             %%% Parasitic Drag Buildup
             S_wet = 4*pi*obj.diam/2 * obj.length;
-            obj.CD_0 = FF * Cf * S_wet/S_ref;
+            obj.CD_0 = FF * Cf * S_wet/S_ref
 
         end
 

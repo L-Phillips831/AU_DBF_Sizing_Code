@@ -173,8 +173,8 @@ classdef Vehicle < handle
             % end
 
             % Aero Buildup
-            % alpha_range = -6:2:20;
-            alpha_range = 2;
+            alpha_range = -6:2:20;
+            % alpha_range = 2;
             obj.generate_geom_file();
             num_cases = obj.generate_case_file(alpha_range);
             saved_files = obj.generate_cmd_file(num_cases);
@@ -253,7 +253,7 @@ classdef Vehicle < handle
             for i = 1:num_cases
               new_str = [
                          "----------------------------------------------",...
-                         sprintf("Run case %1.0f: - unnamed", i),...
+                         sprintf("Run case  %1.0f:  -unnamed- ", i),...
                          "",...
                          sprintf("alpha        ->  alpha       =   %.5f", alpha_range(i)),...
                          "beta         ->  beta        =   0.00000",...    
@@ -310,7 +310,8 @@ classdef Vehicle < handle
 
                 new_str = [
                             "X",...
-                            sprintf("ST %s", current_save),... 
+                            sprintf("ST %s", current_save),...
+                            "-",...
                             ];
 
                 str = [str, new_str];
@@ -359,11 +360,13 @@ classdef Vehicle < handle
 
         
         [alpha_arr, sort_idx] = sort(alpha_arr);
-        CL_arr = sort(sort_idx);
-        Cm_arr = sort(sort_idx);
-        CD_arr = sort(sort_idx);
+        CL_arr = CL_arr(sort_idx)
+        Cm_arr = Cm_arr(sort_idx)
+        CD_arr = CD_arr(sort_idx)
 
-        Cl_fit = polyfit(alpha_arr, CL_arr, 1); obj.Cl_alpha = Cl_fit(1);
+        alpha_arr = alpha_arr .* pi / 180;
+        Cl_fit = polyfit(alpha_arr, CL_arr, 1);
+        obj.Cl_alpha = Cl_fit(1);
         CM_fit = polyfit(alpha_arr, Cm_arr, 1); obj.CM_alpha = CM_fit(1);
         CD_fit = polyfit(CL_arr, CD_arr, 2); 
         obj.K2 = CD_fit(1); obj.K1 = CD_fit(2); 

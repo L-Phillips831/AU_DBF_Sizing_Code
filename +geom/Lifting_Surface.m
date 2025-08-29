@@ -21,6 +21,7 @@ classdef Lifting_Surface < geom.Component & handle
         airfoil_str string
         Cl_alpha (1,1) double
         Cl_max (1,1) double
+        CD_0 (1,1) double
 
     end
     
@@ -152,11 +153,11 @@ classdef Lifting_Surface < geom.Component & handle
 
             %%% Flat plate coefficient 
             % Laminar Section
-            Re_lam = rho_air * airspeed * (wing_lam_length * obj.length) / air_dyn_visc;
+            Re_lam = rho_air * airspeed * (wing_lam_length * obj.chord) / air_dyn_visc;
             Cf_lam = 1.328/(Re_lam^0.5);
 
             % Turbulent Section
-            Re_total = rho_air * airspeed * obj.length / air_dyn_visc;
+            Re_total = rho_air * airspeed * obj.chord / air_dyn_visc;
             Cf_turb = 0.074 / (Re_total^0.2) - 0.074 / (Re_lam ^ 0.2);
 
             Cf = Cf_turb + Cf_lam;
