@@ -10,15 +10,15 @@ classdef Vehicle < handle
         % Propulsion (1,1) powerplant.Propulsion          % Propulsion system
         CG (3,1) double                                 % X,Y,Z loc of CG [m]
 
-        W_S (1,1) double
+        W_S (1,1) double                                % Vehicle wing loading [kg/m^2]
 
         S_ref (1,1) double                              % Vehicle reference area  [m]
         c_ref (1,1) double                              % Vehicle reference chord [m]
         b_ref (1,1) double                              % Vehicle reference span  [m]
-        HT_coeff (1,1) double
-        VT_coeff (1,1) double
-        aircraft_length (1,1) double
-        L_HT (1,1) double
+        HT_coeff (1,1) double                           % Horizontal tail volume coefficient [-]
+        VT_coeff (1,1) double                           % Vertical tail volume coefficieint [-]
+        aircraft_length (1,1) double                    % Length value use to approximate L_HT [m]
+        L_HT (1,1) double                               % Horizontal tail moment arm [m]
 
         mass (1,1) double                               % Vehicle mass  [kg]
         Cl_alpha (1,1) double                           % Vehicle Cl_alpha [-]
@@ -101,9 +101,9 @@ classdef Vehicle < handle
         %   - updated vehicle object with component addition
         %
         function obj = add_HT(obj, AR_, airfoil_)
-            L_HT = obj.aircraft_length * 0.6;  % Raymer assumption of L_HT
-            obj.L_HT = L_HT;
-            S_HT = obj.S_ref * obj.c_ref * obj.HT_coeff / L_HT;
+            L_HT_ = obj.aircraft_length * 0.6;  % Raymer assumption of L_HT
+            obj.L_HT = L_HT_;
+            S_HT = obj.S_ref * obj.c_ref * obj.HT_coeff / L_HT_;
             span = sqrt(AR_ * S_HT);
             chord = S_HT / span;
 
