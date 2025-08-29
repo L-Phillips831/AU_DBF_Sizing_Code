@@ -85,6 +85,8 @@ classdef Vehicle < handle
             obj.S_ref = wing_area;
             obj.c_ref = root_chord_;
             obj.b_ref = wing_span;
+
+            obj.CG = [x_loc_q4_, 0, 0]; % Place directly on q4 for now
         end
 
 
@@ -100,13 +102,13 @@ classdef Vehicle < handle
             L_HT = obj.aircraft_length * 0.6;  % Raymer assumption of L_HT
             S_HT = obj.S_ref * obj.c_ref * obj.HT_coeff / L_HT;
             span = sqrt(AR_ * S_HT);
-            chord = AR_ / span;
+            chord = S_HT / span;
 
             x_loc_ = obj.aircraft_length - (0.25*chord);
 
             airfoil_str = fullfile("Airfoils\", sprintf("%s.dat",airfoil_));
 
-            HT = geom.Lifting_Surface("HT", S_HT, AR_, span, chord, 1, 0, "Standard", airfoil_str);
+            HT = geom.Lifting_Surface("HT", S_HT, AR_, chord, span, 1, 0, "Standard", airfoil_str);
             HT.place_surface(x_loc_, 0, 0, 0);
 
             obj.components(end+1) = HT;
@@ -133,7 +135,7 @@ classdef Vehicle < handle
 
             airfoil_str = fullfile("Airfoils\", sprintf("%s.dat",airfoil_));
 
-            VT = geom.Lifting_Surface("VT", S_VT, AR_, span, root_chord_, taper_, 0, "Fin", airfoil_str);
+            VT = geom.Lifting_Surface("VT", S_VT, AR_, root_chord_, span, taper_, 0, "Fin", airfoil_str);
             VT.place_surface(x_loc_, y_loc_, 0, 0);
 
             obj.components(end+1) = VT;
@@ -188,6 +190,9 @@ classdef Vehicle < handle
                 obj.CD_0 = obj.CD_0 + component.CD_0;
             end
 
+            % Add landing gear drag penalty
+            obj.CD_0 = obj.CD_0 + 0.01;  % Low fidelity estimation for now
+            
         end
         
     end
@@ -360,9 +365,9 @@ classdef Vehicle < handle
 
         
         [alpha_arr, sort_idx] = sort(alpha_arr);
-        CL_arr = CL_arr(sort_idx)
-        Cm_arr = Cm_arr(sort_idx)
-        CD_arr = CD_arr(sort_idx)
+        CL_arr = CL_arr(sort_idx);
+        Cm_arr = Cm_arr(sort_idx);
+        CD_arr = CD_arr(sort_idx);
 
         alpha_arr = alpha_arr .* pi / 180;
         Cl_fit = polyfit(alpha_arr, CL_arr, 1);
@@ -382,7 +387,7 @@ classdef Vehicle < handle
 
         function run_avl(cmd_file)
 
-            system(sprintf('"+lib/+AVL/avl" < "%s"', cmd_file)); 
+            [status, cmd_out] = system(sprintf('"+lib/+AVL/avl" < "%s"', cmd_file)); 
 
         end
 

@@ -21,7 +21,7 @@ classdef Fuselage < geom.Component
         end
         
         function obj = get_parasitic_drag(obj, airspeed, S_ref)
-            fuselage_lam_length = 0.1;  % Percent of laminar flow over fuselage
+            fuselage_lam_length = 0.1;  % Fraction of laminar flow over fuselage
             rho_air = 1.225;            % Air density [kg/m^3]
             air_dyn_visc = 1.81e-5;     % Air dynamic viscocity [Pa*s]
 
@@ -32,18 +32,18 @@ classdef Fuselage < geom.Component
 
             % Turbulent Section
             Re_total = rho_air * airspeed * obj.length / air_dyn_visc;
-            Cf_turb = 0.074 / (Re_total^0.2)
-            Cf_turb_lam = 0.074 / (Re_lam ^ 0.2)
+            Cf_turb = 0.074 / (Re_total^0.2);
 
-            Cf = Cf_turb + Cf_lam;
+            Cf = (1 - fuselage_lam_length) * Cf_turb + Cf_lam * fuselage_lam_length;
 
             %%% Form Factor Calculation
             f_fuse = obj.length / obj.diam;
             FF = (0.9 + 5/(f_fuse^1.5) + f_fuse / 400);
 
             %%% Parasitic Drag Buildup
-            S_wet = 4*pi*obj.diam/2 * obj.length;
-            obj.CD_0 = FF * Cf * S_wet/S_ref
+            interference_factor = 1.3;
+            S_wet = pi*obj.diam* obj.length;
+            obj.CD_0 = FF * Cf * S_wet/S_ref * interference_factor;
 
         end
 

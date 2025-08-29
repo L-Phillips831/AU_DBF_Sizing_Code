@@ -158,9 +158,9 @@ classdef Lifting_Surface < geom.Component & handle
 
             % Turbulent Section
             Re_total = rho_air * airspeed * obj.chord / air_dyn_visc;
-            Cf_turb = 0.074 / (Re_total^0.2) - 0.074 / (Re_lam ^ 0.2);
+            Cf_turb = 0.074 / (Re_total^0.2);
 
-            Cf = Cf_turb + Cf_lam;
+            Cf = Cf_turb * (1 - wing_lam_length) + Cf_lam * wing_lam_length;
 
             %%% Form Factor Calculation
             wing_thickness = 0.14;  % Estimation of surface thickness based on previous airfoil choices

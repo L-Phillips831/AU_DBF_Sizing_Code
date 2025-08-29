@@ -6,7 +6,7 @@ Aircraft
 #Sref    Cref    Bref
 1.3 0.5 2.4
 #Xref    Yref    Zref
-0.0 0.0 0.0
+0.5 0.0 0.0
 #====================================================================
 SURFACE
 Wing
@@ -17,7 +17,7 @@ YDUPLICATE
 0.0
 #
 TRANSLATE
-0.3 0.0 0.0
+0.4 0.0 0.0
 #-------------------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  Nspanwise  Sspace
@@ -41,17 +41,17 @@ YDUPLICATE
 0.0
 #
 TRANSLATE
-0.6 0.0 0.0
+1.1 0.0 0.0
 #-------------------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  Nspanwise  Sspace
-0.0 0.0 0.0 1.5 0.0 0.0 0.0
+0.0 0.0 0.0 0.5 0.0 0.0 0.0
 AFILE
 Airfoils\NACA0012.dat
 #-------------------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  Nspanwise  Sspace
-0.0 1.0 0.0 1.5 0.0 0.0 0.0
+0.0 0.7 0.0 0.5 0.0 0.0 0.0
 AFILE
 Airfoils\NACA0012.dat
 #====================================================================
@@ -61,16 +61,16 @@ VT
 8            1.0       12         1.0
 #
 TRANSLATE
-0.9 0.0 0.0
+1.1 0.0 0.0
 #-------------------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  Nspanwise  Sspace
-0.0 0.0 0.0 0.7 0.0 0.0 0.0
+0.0 0.0 0.0 0.6 0.0 0.0 0.0
 AFILE
 Airfoils\NACA0012.dat
 #-------------------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  Nspanwise  Sspace
-0.3 0.0 0.4 0.4 0.0 0.0 0.0
+0.2 0.0 0.2 0.3 0.0 0.0 0.0
 AFILE
 Airfoils\NACA0012.dat

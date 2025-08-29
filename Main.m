@@ -35,10 +35,10 @@ function cost = MOG_Solver(vehicle_params)
     % Define Vehicle
     aircraft_mass = 6.8;    % [kg]
     aircraft_W_S = 5.21;    % [kg/m]
-    aircraft = Vehicle("Aircraft", aircraft_W_S, aircraft_mass, 0.7, 0.1);
+    aircraft = Vehicle("Aircraft", aircraft_W_S, aircraft_mass, 0.7, 0.05);
 
     % Add wing
-    wing_q4 = 0.45; % [m]
+    wing_q4 = 0.5; % [m]
     AR_ = 4.4;
     taper_ = 1;
     sweep_ = 0;
@@ -61,8 +61,7 @@ function cost = MOG_Solver(vehicle_params)
     VT_airfoil_ = "NACA0012";
     aircraft.add_VT(VT_AR_, taper_, 0, VT_airfoil_);
 
-    aircraft.analyze_airframe();
-    aircraft
+    aircraft.analyze_airframe()
     
 
     %%% Define Missions
