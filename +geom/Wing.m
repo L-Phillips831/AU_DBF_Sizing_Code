@@ -4,16 +4,15 @@ classdef Wing < geom.Lifting_Surface
     
     properties
         end_geom (1,1) boolean
-        x_loc (1,1) double
-        z_loc (1,1) double
+        
 
     end
     
     methods
-        function obj = Wing(inputArg1,inputArg2)
-            %WEIGHT_BUILDER Construct an instance of this class
-            %   Detailed explanation goes here
-            obj.Property1 = inputArg1 + inputArg2;
+        
+        function obj = Wing(S_, AR_, span_, taper_, sweep_, airfoil_)
+            obj = Lifting_Surface(S_, AR_, span_, taper_, sweep_, airfoil_);
+
         end
         
         function cl_alpha = get_wing_cl_alpha(obj,M)

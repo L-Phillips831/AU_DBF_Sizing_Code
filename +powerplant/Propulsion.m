@@ -1,9 +1,9 @@
 classdef Propulsion
     properties
-        battery (1,:) battery
-        esc esc
-        motor motor
-        propeller propeller
+        battery (1,:) powerplant.battery
+        esc powerplant.esc
+        motor powerplant.motor
+        propeller powerplant.propeller
     end
     methods
         function Prop = Propulsion(battery,esc,motor,propeller)

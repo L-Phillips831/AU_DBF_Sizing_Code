@@ -1,4 +1,4 @@
-classdef Component < matlab.mixin.Heterogeneous
+classdef Component < matlab.mixin.Heterogeneous & handle
     % Superclass definition for component objects. Abstract class 
     % forces creation of weight buildup and aero buildup methods in
     % implementing classes
@@ -9,8 +9,7 @@ classdef Component < matlab.mixin.Heterogeneous
     
     methods (Abstract)
         
-        mass = mass_buildup(obj, varargin)
-        aero = aero_buildup(obj, varargin)
+        mass = get_parasitic_drag(obj, airspeed, S_ref);
 
     end
 end
