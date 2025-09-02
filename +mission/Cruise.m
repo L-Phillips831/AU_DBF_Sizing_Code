@@ -39,28 +39,30 @@ classdef Cruise < mission.Mission_Segment
             g    = 9.81;    % Acceleration due to gravity [m/s^2]
             numVals_ = obj.numVals;
 
+        % Pull start of segment conditions
             vAir_NED_Start = tab.Airspeed_NED(end, :);
             v_NED_Start = tab.Groundspeed_NED(end, :);
             vWind_NED_Start = tab.Windspeed_NED(end, :);
             tStart = tab.Time(end);
             alpha_Start = tab.Alpha(end);
-            eulers_Start = tab.Eulers(end, :);
-            psi_Start = eulers_Start(3);
+            psi_Start = tab.Eulers(end, 3);
+            E_Start = tab.Energy(end);
 
             % Initialize table variables
             t = tStart*ones(numVals_, 1);
-            vAir_NED = repmat(vAir_NED_Start, numVals_, 1);
-            v_NED = repmat(v_NED_Start, numVals_, 1);
-            vWind_NED = repmat(vWind_NED_Start, numVals_, 1);
+            vAir_NED = repmat(vAir_NED_Start, numVals_, 1); % nx3
+            v_NED = repmat(v_NED_Start, numVals_, 1); % nx3
+            vWind_NED = repmat(vWind_NED_Start, numVals_, 1); % nx3
             throttle = obj.T_set*ones(numVals_, 1);
             thrust=zeros(numVals_, 1);
             q=zeros(numVals_, 1);
             CL=zeros(numVals_, 1);
             CD=zeros(numVals_, 1);
             mass =(tab.mass(end));                   
-            pUse = zeros(numVals_,1);
+            power = zeros(numVals_,1);
+            E = E_Start*zeros(numVals_, 1);
             alpha = zeros(numVals_,1);
-            eulers = zeros(numVals_,1);
+            eulers = zeros(numVals_,3);
             gamma = zeros(numVals_,1);
 
             % Heading check for adding change in distance in +/- x_I
@@ -83,7 +85,7 @@ classdef Cruise < mission.Mission_Segment
             if i == 1
                 dt = 0;
                 vAir_x_Body = cosd(alpha_Start) * vAir_NED(i, 1); % Need X velocity for thrust calcs
-                [pUse(i), thrust(i)] = ThrustBackCalculated(vAir_x_Body, obj.T_set);
+                [power(i), thrust(i)] = ThrustBackCalculated(vAir_x_Body, obj.T_set);
                 L = weight - sind(alpha_Start) * thrust(i); % Use previous alpha as an approximation
             else
                 v0 = abs(v_NED(i, 1));
@@ -92,7 +94,7 @@ classdef Cruise < mission.Mission_Segment
                 dt = (-v0 + sqrt(v0^2 - 2*a*d))/a; % Solved quadratic eqn
                 t(i) = t(i-1) + dt;
                 vAir_x_Body = cosd(alpha(i-1)) * vAir_NED(i, 1);
-                [pUse(i), thrust(i)] = ThrustBackCalculated(vAir_x_Body, obj.T_set); % NEED FUNCTION
+                [power(i), thrust(i)] = ThrustBackCalculated(vAir_x_Body, obj.T_set); % NEED FUNCTION
                 L = weight - sind(alpha(i-1)) * thrust(i);
             end
             q(i) = 0.5 * rho * vAir_NED(i, 1)^2; % Only moves in x_NED
@@ -101,6 +103,7 @@ classdef Cruise < mission.Mission_Segment
             eulers(i, :) = [0, alpha(i), psi_Start];
             CD(i) = CD0 + k * CL(i)^2;
             D = CD(i) * q(i) * Sref;
+            E = E(i) + trapz(t(1:i) , power(1:i));
 
             %[F_x_Body, F_z_Body] = Vehicle.reconcile_L_D(L, D, alpha); %
             %Use this in another function ^ ?
@@ -109,13 +112,13 @@ classdef Cruise < mission.Mission_Segment
             a_NED = [F_x_NED, 0, 0]/mass;
 
             if i < numVals_
-                v_NED(i+1) = v_NED(i) + a_NED*dt; % Next time step velocity
+                v_NED(i+1) = v_NED(i) + a_NED*dt; % Next time step velocity. Velocity after current time step acceleration
             end
         end
 
         % New structure/table. All vectors in NED
             Snew.Airspeed_NED = vAir_NED;
-            Snew.Groundspeed_NED = vGround_NED;
+            Snew.Groundspeed_NED = v_NED;
             Snew.Windspeed_NED = vWind_NED;
             Snew.Eulers = eulers;
             Snew.Position_NED = pos_NED;
