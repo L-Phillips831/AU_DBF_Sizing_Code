@@ -15,7 +15,7 @@ classdef Cruise < mission.Mission_Segment
             obj.T_set = T_set;
             obj.dDelta = dDelta;
             obj.vehicle = vehicle;
-            numVals_ = numVals;
+            obj.numVals_ = numVals;
             obj.windVec = windVec;
            
         end
@@ -29,9 +29,7 @@ classdef Cruise < mission.Mission_Segment
         % each step found with (Thrust - Drag) / mass.
 
         % To do:
-        % - add ground and airspeed
-        % - add aoa
-        % - add fpa
+        % - Update euler angles with aoa, assuming level flight
 
         % General variables
             % tab  = obj.MissionTable;                                             
@@ -48,15 +46,13 @@ classdef Cruise < mission.Mission_Segment
             tStart = tab.Time(end);
             alpha_Start = tab.Alpha(end);
             eulers_Start = tab.Eulers(end, :);
-            phi = eulers_Start(:, 1);
-            theta = eulers_Start(:, 2);
-            psi = eulers_Start(:, 3);
+            psi_Start = eulers_Start(3);
 
             % Initialize table variables
             t = tStart*ones(numVals_, 1);
-            vAir_NED = vAir_NED_Start*ones(numVals_,1);
-            v_NED = zeros(numVals_,1);
-            vWind_NED = vWind_NED_Start*ones(numVals_,1);
+            vAir_NED = repmat(vAir_NED_Start, numVals_, 1);
+            v_NED = repmat(v_NED_Start, numVals_, 1);
+            vWind_NED = repmat(vWind_NED_Start, numVals_, 1);
             thrust=zeros(numVals_, 1);
             q=zeros(numVals_, 1);
             CL=zeros(numVals_, 1);
@@ -64,12 +60,13 @@ classdef Cruise < mission.Mission_Segment
             mass =(tab.mass(end));                   
             pUse = zeros(numVals_,1);
             alpha = zeros(numVals_,1);
+            eulers = zeros(numVals_,1);
             gamma = zeros(numVals_,1);
 
             % Heading check for adding change in distance in +/- x_I
             pos_NED_Start = tab.Position_NED(end, :);
             x_NED_Start = pos_NED_Start(1); %
-            if abs(abs(psi) - 180) < 1
+            if abs(abs(psi_Start) - 180) < 1
                 delta_NED = - obj.dDelta;
             else
                 delta_NED = obj.dDelta;
@@ -78,17 +75,6 @@ classdef Cruise < mission.Mission_Segment
 
             x_NED = linspace(x_NED_Start, x_NED_End, numVals_); % Discretization Base
             pos_NED(:, 1) = x_NED;
-        
-            % 
-
-            % Flow:
-            % Use v_NED and vWind_NED to get vAir_NED
-            % Back calculate aoa from lift required
-            % Get q, CL, CD, D to track or use later
-            % Do a force balance in body frame with fn, thrust, and weight
-            % Find acceleration in each direction
-            % Numerically integrate acceleration
-
 
         for i = 1:numVals_
             weight = mass * g;
@@ -112,12 +98,12 @@ classdef Cruise < mission.Mission_Segment
             q(i) = 0.5 * rho * vAir_NED(i, 1)^2; % Only moves in x_NED
             CL(i) = L / (q(i) * Sref);
             alpha(i) = (CL(i) - CL0) / CL_alpha; % THESE AERO VALUES ARE IN VEHICLE?
+            eulers(i, :) = [0, alpha(i), psi_Start];
             CD(i) = CD0 + k * CL(i)^2;
             D = CD(i) * q(i) * Sref;
 
             %[F_x_Body, F_z_Body] = Vehicle.reconcile_L_D(L, D, alpha); %
             %Use this in another function ^ ?
-
             
             F_x_NED = cosd(alpha(i)) * thrust(i) - D;
             a_NED = [F_x_NED, 0, 0]/mass;
@@ -125,17 +111,8 @@ classdef Cruise < mission.Mission_Segment
             if i < numVals_
                 v_NED(i+1) = v_NED(i) + a_NED*dt; % Next time step velocity
             end
-
-
-
-
-
-
-
-
         end
 
-        % Vectors: position, airspeed, groundspeed, eulers
         % New structure/table. All vectors in NED
             Snew.Airspeed_NED = vAir_NED;
             Snew.Groundspeed_NED = vGround_NED;
