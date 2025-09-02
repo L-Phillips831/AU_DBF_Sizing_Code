@@ -5,7 +5,6 @@ classdef Turn < mission.Mission_Segment
     % To Do:
     % - Make sure euler angles are the correct rotations. Is aoa = theta?
     % - Integrate over position/velocity
-    % - Resolve q
     % - All of sustained
     
     properties       
@@ -74,69 +73,97 @@ classdef Turn < mission.Mission_Segment
             numVals_ = obj.numVals;
 
         % Instantaneous variables
-            lfStruc = obj.vehicle.lfStruc;                                          % Need call, maximum structural load factor
+            lfStruc = obj.vehicle.lfStruc;                                  % Need call, maximum structural load factor
 
         % Pull start of segment conditions
             vAir_NED_Start = tab.Airspeed_NED(end, :);
             v_NED_Start = tab.Groundspeed_NED(end, :);
             vWind_NED_Start = tab.Windspeed_NED(end, :);
+            pos_NED_Start = tab.
             tStart = tab.Time(end);
-            alpha_Start = tab.Alpha(end);
             psi_Start = tab.Eulers(end, 3);
             E_Start = tab.Energy(end);
 
         % Initialize table variables
-            t = tStart*ones(numVals_, 1);
-            vAir_NED = repmat(vAir_NED_Start, numVals_, 1); % nx3
-            v_NED = repmat(v_NED_Start, numVals_, 1); % nx3
+            t         = tStart*ones(numVals_, 1);
+            vAir_NED  = repmat(vAir_NED_Start, numVals_, 1); % nx3
+            v_NED     = repmat(v_NED_Start, numVals_, 1); % nx3
             vWind_NED = repmat(vWind_NED_Start, numVals_, 1); % nx3
-            throttle = obj.T_set*ones(numVals_, 1);
-            thrust=zeros(numVals_, 1);
-            q=zeros(numVals_, 1);
-            CL=zeros(numVals_, 1);
-            CD=zeros(numVals_, 1);
-            mass =(tab.mass(end));                   
-            power = zeros(numVals_,1);
-            E = E_Start*zeros(numVals_, 1);
-            alpha = zeros(numVals_,1);
-            eulers = zeros(numVals_,3);
-            gamma = zeros(numVals_,1);                  
+            pos_NED   = pos_NED_Start*zeros(numVals_, 3);
+            throttle  = obj.T_set*ones(numVals_, 1);
+            thrust    = zeros(numVals_, 1);
+            q         = zeros(numVals_, 1);
+            CL        = zeros(numVals_, 1);
+            CD        = zeros(numVals_, 1);
+            mass      = (tab.mass(end));                   
+            power     = zeros(numVals_,1);
+            E         = E_Start*zeros(numVals_, 1);
+            alpha     = zeros(numVals_,1);
+            eulers    = zeros(numVals_,3);
+            gamma     = zeros(numVals_,1);                  
 
 
         % Discretization on heading
-            psi = linspace(0, dPsi, obj.numVals);
+            psi = psi_Start + linspace(0, dPsi, numVals_);
+
+        % Heading wrap-around -180 to 180
+            for i = 1:numVals_
+                if psi(i) < -180
+                    psi(i) = psi(i) + 360;
+                elseif psi(i) > 180
+                    psi(i) = psi(i) - 360;
+                end
+            end
+
+        % Euler angles set
             eulers(:, 3) = psi;
+            if dPsi > 0
+                eulers(:, 1) = 90; % Bank right to go right
+            elseif dPsi < 0
+                eulers(:, 1) = -90; % Bank left to go left
+            end
+
+            weight = mass * g;
 
         % Instantaneous
             for i = 1:numVals_
-                q(i) = 0.5*rho*v(i)^2; % X AND Y VELOCITIES COMBINED
+                if i > 1
+                    eulers(i, 2) = alpha(i-1);
+                    v_NED(i, :) = v_NED(i-1, :) + a_NED * dt;
+                    gamma(i) = atand(v_NED(i, 3) / sqrt(v_NED(i, 1)^2 + v_NED(i, 2)^2));
+                else
+                    eulers(i, 2) = 0; % GIVE INITIAL
+                end
+                BI = Vehicle.get_DCM_BI(eulers(i, 1), eulers(i, 2), eulers(i, 3));
+                IB = BI';
+                vAir_NED(i, :) = v_NED(i, :) - vWind_NED(i, :); % Use previous v_NED
+                v_Aero = sqrt(vAir_NED(i, 1)^2 + vAir_NED(i, 2)^2);
+                q(i) = 0.5*rho*v_Aero^2;
                 LmaxAero = obj.vehicle.CLmax*q(i)*Sref;
                 LmaxStructure = lfStruc*mass*g;
                 L = min([LmaxAero, LmaxStructure]);                         % Constrained by aero or structure
-                a_C = L/mass;                                   
                 CL(i) = L/(Sref*q(i));
+                alpha(i) = (CL(i) - CL0) / CL_Alpha;
                 CD(i) = CD0 + k*CL(i)^2;
                 D = CD(i) * q(i) * Sref;
-                [thrust(i), power(i)] = PropulsionCalc(v(i), T_set);         % NEED FUNCTION
-                a_T = (thrust(i) - D)/mass;                             % forward acceleration
-                r = v(i)^2 / a_C;
-                omega = v(i)/r;                                             % turn rate in rad/s
+
+                vAir_Body = BI * vAir_NED(i, :);
+                [power(i), thrust(i)] = ThrustBackCalculated(vAir_Body(1), T_set); % NEED FUNCTION
+
+                [F_x_Body, F_z_Body] = Vehicle.reconcile_L_D(L, D, alpha(i));  %
+                F_x_Body = thrust(i) + F_x_Body;
+                F_y_Body = weight * sin(eulers(i, 1));
+                a_Body = [F_x_Body, F_y_Body, F_z_Body]/mass;
+                a_NED = IB * a_Body;
+
+                r = v_Aero^2 / a_Body(3);
+                omega = v_Aero/r;                                           % turn rate in rad/s
                 if i>1
-                    E(i) = E(i-1) + power*dt;
                     dt = (psi(i)-psi(i-1))/omega;
                     t(i) = t(i-1) + dt;
-                    dPsi(i) = dPsi(i-1) + (psi(i) - psi(i-1))*r;                  % Small angle approx
-                    hDot(i) = g*(t(i) - t(1));
-                    h(i) = h(1) - 0.5*g*(t(i) - t(1)); % PUT IN POSITION
-                end
-
-                a_x_NED = a_T * cos(psi) - a_C * sin(psi); % NEED a_T / a_C
-                a_y_NED = a_C * cos(psi) + a_T * sin(psi);
-                a_NED = [a_x_NED, a_y_NED, 0];
-                if i < numVals_
-                    v_NED(i+1) = v_NED(i) + a_NED*dt; % Next time step velocity. Velocity after current time step acceleration
-                end
-                                
+                    E(i) = E(i-1) + power(i)*dt;
+                    pos_NED(i, 3) = 0.5*(v_NED(i-1,:)+v_NED(i,:))*dt;
+                end               
             end
             
 

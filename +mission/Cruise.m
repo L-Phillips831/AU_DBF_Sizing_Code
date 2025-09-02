@@ -74,13 +74,13 @@ classdef Cruise < mission.Mission_Segment
                 delta_NED = obj.dDelta;
             end
             x_NED_End   = x_NED_Start + delta_NED;
-
             x_NED = linspace(x_NED_Start, x_NED_End, numVals_); % Discretization Base
             pos_NED(:, 1) = x_NED;
 
-        for i = 1:numVals_
             weight = mass * g;
-            vAir_NED(i, :) = v_NED(i, :) - vWind_NED(i, :); % Use previous v_NED
+
+        for i = 1:numVals_
+            vAir_NED(i, :) = v_NED(i, :) - vWind_NED(i, :);
 
             if i == 1
                 dt = 0;
@@ -105,8 +105,7 @@ classdef Cruise < mission.Mission_Segment
             D = CD(i) * q(i) * Sref;
             E = E(i) + trapz(t(1:i) , power(1:i));
 
-            %[F_x_Body, F_z_Body] = Vehicle.reconcile_L_D(L, D, alpha); %
-            %Use this in another function ^ ?
+
             
             F_x_NED = cosd(alpha(i)) * thrust(i) - D;
             a_NED = [F_x_NED, 0, 0]/mass;
