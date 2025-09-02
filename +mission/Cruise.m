@@ -32,7 +32,6 @@ classdef Cruise < mission.Mission_Segment
         % - Update euler angles with aoa, assuming level flight
 
         % General variables
-            % tab  = obj.MissionTable;                                             
             Sref = obj.vehicle.Sref;     
             k    = obj.vehicle.k;            
             CD0  = obj.vehicle.CD0;          
@@ -53,6 +52,7 @@ classdef Cruise < mission.Mission_Segment
             vAir_NED = repmat(vAir_NED_Start, numVals_, 1);
             v_NED = repmat(v_NED_Start, numVals_, 1);
             vWind_NED = repmat(vWind_NED_Start, numVals_, 1);
+            throttle = obj.T_set*ones(numVals_, 1);
             thrust=zeros(numVals_, 1);
             q=zeros(numVals_, 1);
             CL=zeros(numVals_, 1);
@@ -120,6 +120,7 @@ classdef Cruise < mission.Mission_Segment
             Snew.Eulers = eulers;
             Snew.Position_NED = pos_NED;
             Snew.Mass = mass*ones(numVals_,1);
+            Snew.Throttle = throttle;
             Snew.Thrust_Body = thrust;
             Snew.q = q;
             Snew.CL = CL;
