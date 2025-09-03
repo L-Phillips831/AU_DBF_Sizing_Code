@@ -2,10 +2,13 @@ classdef Turn < mission.Mission_Segment
     %TURN Summary of this class goes here
     %   Detailed explanation goes here
 
-    % To Do:
+    % Instantaneous To Do:
     % - Make sure euler angles are the correct rotations. Is aoa = theta?
     % - Integrate over position/velocity
-    % - All of sustained
+    % Sustained to do:
+    % - Copy over relevant logic
+    % - Determine euler angles based on heading discretization and laod
+    % factor
     
     properties       
         vehicle (1,1) Vehicle
@@ -79,7 +82,7 @@ classdef Turn < mission.Mission_Segment
             vAir_NED_Start = tab.Airspeed_NED(end, :);
             v_NED_Start = tab.Groundspeed_NED(end, :);
             vWind_NED_Start = tab.Windspeed_NED(end, :);
-            pos_NED_Start = tab.
+            pos_NED_Start = tab.Position_NED(end, :);
             tStart = tab.Time(end);
             psi_Start = tab.Eulers(end, 3);
             E_Start = tab.Energy(end);
@@ -212,25 +215,45 @@ classdef Turn < mission.Mission_Segment
 
 
             % Initialize table variables
-            t      = tab.Time(end)*ones(obj.numVals, 1); 
-            d      = tab.Distance(end)*ones(obj.numVals, 1);
-            v      = tab.Velocity(end)*ones(obj.numVals, 1);
-            a      = zeros(obj.numVals, 1);
-            pUse   = zeros(obj.numVals, 1);
-            thrust = zeros(obj.numVals, 1); 
-            q      = zeros(obj.numVals, 1); 
-            CL     = zeros(obj.numVals, 1); 
-            CD     = zeros(obj.numVals, 1); 
-            L      = zeros(obj.numVals, 1); 
-            D      = zeros(obj.numVals, 1); 
-            LD     = zeros(obj.numVals, 1); 
-            hDot   = zeros(obj.numVals, 1);                                     
-            h      = tab.Altitude(end)*ones(obj.numVals, 1);                         
-            Energy = tab.Energy(end)*ones(obj.numVals, 1);                      
+            t         = tStart*ones(numVals_, 1);
+            vAir_NED  = repmat(vAir_NED_Start, numVals_, 1); % nx3
+            v_NED     = repmat(v_NED_Start, numVals_, 1); % nx3
+            vWind_NED = repmat(vWind_NED_Start, numVals_, 1); % nx3
+            pos_NED   = pos_NED_Start*zeros(numVals_, 3);
+            throttle  = obj.T_set*ones(numVals_, 1);
+            thrust    = zeros(numVals_, 1);
+            q         = zeros(numVals_, 1);
+            CL        = zeros(numVals_, 1);
+            CD        = zeros(numVals_, 1);
+            mass      = (tab.mass(end));                   
+            power     = zeros(numVals_,1);
+            E         = E_Start*zeros(numVals_, 1);
+            alpha     = zeros(numVals_,1);
+            eulers    = zeros(numVals_,3);
+            gamma     = zeros(numVals_,1);                      
 
 
             % Discretization on heading
-            psi = linspace(0, dPsi, obj.numVals);
+            psi = psi_Start + linspace(0, dPsi, numVals_);
+
+            % Heading wrap-around -180 to 180
+            for i = 1:numVals_
+                if psi(i) < -180
+                    psi(i) = psi(i) + 360;
+                elseif psi(i) > 180
+                    psi(i) = psi(i) - 360;
+                end
+            end
+
+            % Euler angles set
+            eulers(:, 3) = psi;
+            if dPsi > 0
+                eulers(:, 1) = 90; % Bank right to go right
+            elseif dPsi < 0
+                eulers(:, 1) = -90; % Bank left to go left
+            end
+
+            weight = mass * g;
 
 
             % Sustained
