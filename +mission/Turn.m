@@ -2,13 +2,6 @@ classdef Turn < mission.Mission_Segment
     %TURN Summary of this class goes here
     %   Detailed explanation goes here
 
-    % Instantaneous To Do:
-    % - Make sure euler angles are the correct rotations. Is aoa = theta?
-    % - Integrate over position/velocity
-    % Sustained to do:
-    % - Copy over relevant logic
-    % - Determine euler angles based on heading discretization and laod
-    % factor
     
     properties       
         vehicle (1,1) Vehicle
@@ -100,7 +93,7 @@ classdef Turn < mission.Mission_Segment
             CD        = zeros(numVals_, 1);
             mass      = (tab.mass(end));                   
             power     = zeros(numVals_,1);
-            E         = E_Start*zeros(numVals_, 1);
+            E         = E_Start*ones(numVals_, 1);
             alpha     = zeros(numVals_,1);
             eulers    = zeros(numVals_,3);
             gamma     = zeros(numVals_,1);                  
@@ -130,23 +123,22 @@ classdef Turn < mission.Mission_Segment
 
         % Instantaneous
             for i = 1:numVals_
+                eulers(i, 2) = alpha(i);
                 if i > 1
-                    eulers(i, 2) = alpha(i-1);
                     v_NED(i, :) = v_NED(i-1, :) + a_NED * dt;
                     gamma(i) = atand(v_NED(i, 3) / sqrt(v_NED(i, 1)^2 + v_NED(i, 2)^2));
-                else
-                    eulers(i, 2) = 0; % GIVE INITIAL
                 end
                 BI = Vehicle.get_DCM_BI(eulers(i, 1), eulers(i, 2), eulers(i, 3));
                 IB = BI';
-                vAir_NED(i, :) = v_NED(i, :) - vWind_NED(i, :); % Use previous v_NED
+                vAir_NED(i, :) = v_NED(i, :) - vWind_NED(i, :);
                 vAero = sqrt(vAir_NED(i, 1)^2 + vAir_NED(i, 2)^2);
                 q(i) = 0.5*rho*vAero^2;
-                LmaxAero = obj.vehicle.CLmax*q(i)*Sref;
+                LmaxAero = obj.CL_Max_Clean*q(i)*Sref / k_Safe^2;           % Need k_Safe
                 LmaxStructure = lfStruc*mass*g;
                 L = min([LmaxAero, LmaxStructure]);                         % Constrained by aero or structure
                 CL(i) = L/(Sref*q(i));
-                alpha(i) = (CL(i) - CL0) / CL_Alpha;
+                % alpha(i) = (CL(i) - CL0) / CL_Alpha;
+                alpha(i) = 0;
                 CD(i) = CD0 + k*CL(i)^2;
                 D = CD(i) * q(i) * Sref;
 
@@ -160,7 +152,7 @@ classdef Turn < mission.Mission_Segment
                 a_NED = IB * a_Body;
 
                 r = vAero^2 / a_Body(3);
-                omega = vAero/r;                                           % turn rate in rad/s
+                omega = vAero/r;
                 if i>1
                     dt = (psi(i)-psi(i-1))/omega;
                     t(i) = t(i-1) + dt;
@@ -212,15 +204,23 @@ classdef Turn < mission.Mission_Segment
             CD0  = obj.vehicle.CD0;                                                
             rho  = obj.vehicle.rho;                                       
             g    = 9.81;                                                  
-            lf   = obj.lfSust;                                              % Need call, sustained load factor
+            lf   = obj.lfSust;                 
             numVals_ = obj.numVals;
 
+        % Pull start of segment conditions
+            vAir_NED_Start = tab.Airspeed_NED(end, :);
+            v_NED_Start = tab.Groundspeed_NED(end, :);
+            vWind_NED_Start = tab.Windspeed_NED(end, :);
+            pos_NED_Start = tab.Position_NED(end, :);
+            tStart = tab.Time(end);
+            psi_Start = tab.Eulers(end, 3);
+            E_Start = tab.Energy(end);            
 
             % Initialize table variables
             t         = tStart*ones(numVals_, 1);
-            vAir_NED  = repmat(vAir_NED_Start, numVals_, 1); % nx3
-            v_NED     = repmat(v_NED_Start, numVals_, 1); % nx3
-            vWind_NED = repmat(vWind_NED_Start, numVals_, 1); % nx3
+            vAir_NED  = repmat(vAir_NED_Start, numVals_, 1);
+            v_NED     = repmat(v_NED_Start, numVals_, 1);
+            vWind_NED = repmat(vWind_NED_Start, numVals_, 1);
             pos_NED   = pos_NED_Start*zeros(numVals_, 3);
             throttle  = obj.T_set*ones(numVals_, 1);
             thrust    = zeros(numVals_, 1);
@@ -254,41 +254,39 @@ classdef Turn < mission.Mission_Segment
 
             % Sustained
             for i = 1:numVals_
-                eulers(i, 2) = alpha(i); % All assumed 0
-                bankAbs_lf = acosd(1/lf);
-                bankAbs_Aero = q(i)*Sref*CL_Max_Clean/(weight*k_Safe^2); % Need variables
-                bankAbs = min(bankAbs_lf, bankAbs_Aero);
+                eulers(i, 2) = alpha(i); % Assumed 0
+                lf_Aero = q(i)*Sref*CL_Max_Clean/(weight*k_Safe^2); % Need variables
+                lf_Use = min(lf, lf_Aero);
                 if dPsi > 0
-                    eulers(i, 1) = bankAbs; % Bank right to go right
+                    eulers(i, 1) = acosd(1/lf_Use); % Bank right to go right
                 elseif dPsi < 0
-                    eulers(i, 1) = -bankAbs; % Bank left to go left
+                    eulers(i, 1) = -acosd(1/lf_Use); % Bank left to go left
                 end
                 if i > 1
                     v_NED(i, :) = v_NED(i-1, :) + a_NED * dt;
-                else
-                    eulers(i, 2) = 0; % GIVE INITIAL
-                end     
+                end
                 BI = Vehicle.get_DCM_BI(eulers(i, 1), eulers(i, 2), eulers(i, 3));
                 IB = BI';
-                vAir_NED(i, :) = v_NED(i, :) - vWind_NED(i, :); % Use previous v_NED
-                vAero = sqrt(vAir_NED(i, 1)^2 + vAir_NED(i, 2)^2); % good
+                vAir_NED(i, :) = v_NED(i, :) - vWind_NED(i, :);
+                vAero = sqrt(vAir_NED(i, 1)^2 + vAir_NED(i, 2)^2);
                 q(i) = 0.5*rho*vAero^2;
                 CL(i) = L/(Sref*q(i));
-                CD(i) = CD0 + k*CL(i);
-                alpha(i) = (CL(i) - CL0) / CL_Alpha;
+                CD(i) = CD0 + k*CL(i)^2;
+                % alpha(i) = (CL(i) - CL0) / CL_Alpha;
+                alpha(i) = 0;
                 D = CD(i) * Sref * q(i);
                 thrust(i) = D;
                 vAir_Body = BI * vAir_NED(i, :);
                 [throttle(i), power(i)] = BackCalculation(thrust(i), vAir_Body(1));
-                % Body sum of forces
                 [F_x_Body, F_z_Body] = Vehicle.reconcile_L_D(L, D, alpha(i));  %
                 F_x_Body = thrust(i) + F_x_Body;
-                % a body  by Fbody/mass
+                F_y_Body = sind(eulers(i,1)) * weight;
+                F_z_Body = F_z_Body - cosd(eulers(i,1)) * weight;
                 a_Body = [F_x_Body, F_y_Body, F_z_Body]/mass;
-                a_NED = IB * a_Body; % Add gravity component, g
-                aCentr = g*sqrt(lf^2 - 1);
-                r = v_Aero^2 / aCentr;
-                omega = v_Aero/r;                                           % turn rate in rad/s                              
+                a_NED = IB * a_Body;
+                aCentr = sqrt(a_NED(i, 1)^2 + a_NED(i,2)^2);
+                r = vAero^2 / aCentr;
+                omega = vAero/r;                        
                 if i>1
                     dt = (psi(i)-psi(i-1))/omega;
                     t(i) = t(i-1)+ dt; 
