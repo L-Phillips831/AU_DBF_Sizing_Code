@@ -61,7 +61,7 @@ classdef Cruise < mission.Mission_Segment
             CD        = zeros(numVals_, 1);
             mass      = (tab.mass(end));                   
             power     = zeros(numVals_,1);
-            E         = E_Start*zeros(numVals_, 1);
+            E         = E_Start*ones(numVals_, 1);
             alpha     = zeros(numVals_,1);
             eulers    = zeros(numVals_,3);
             gamma     = zeros(numVals_,1);
