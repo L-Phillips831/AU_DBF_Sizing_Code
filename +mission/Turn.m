@@ -2,6 +2,10 @@ classdef Turn < mission.Mission_Segment
     %TURN Summary of this class goes here
     %   Detailed explanation goes here
 
+    % To do:
+    % - Make sure wind is an accurate contribution to q(i)
+    % - Bring in all necessary variables
+    % - Find a way to track alpha well. Otherwise, set to 0
     
     properties       
         vehicle (1,1) Vehicle
@@ -67,6 +71,7 @@ classdef Turn < mission.Mission_Segment
             rho  = obj.vehicle.rho;                                        
             g    = 9.81;     % Acceleration due to gravity [m/s^2] 
             numVals_ = obj.numVals;
+            T_set_ = obj.T_set;
 
         % Instantaneous variables
             lfStruc = obj.vehicle.lfStruc;                                  % Need call, maximum structural load factor
@@ -85,7 +90,7 @@ classdef Turn < mission.Mission_Segment
             vAir_NED  = repmat(vAir_NED_Start, numVals_, 1); % nx3
             v_NED     = repmat(v_NED_Start, numVals_, 1); % nx3
             vWind_NED = repmat(vWind_NED_Start, numVals_, 1); % nx3
-            pos_NED   = pos_NED_Start*zeros(numVals_, 3);
+            pos_NED   = pos_NED_Start*ones(numVals_, 3);
             throttle  = obj.T_set*ones(numVals_, 1);
             thrust    = zeros(numVals_, 1);
             q         = zeros(numVals_, 1);
@@ -133,7 +138,7 @@ classdef Turn < mission.Mission_Segment
                 vAir_NED(i, :) = v_NED(i, :) - vWind_NED(i, :);
                 vAero = sqrt(vAir_NED(i, 1)^2 + vAir_NED(i, 2)^2);
                 q(i) = 0.5*rho*vAero^2;
-                LmaxAero = obj.CL_Max_Clean*q(i)*Sref / k_Safe^2;           % Need k_Safe
+                LmaxAero = obj.CL_Max_Clean*q(i)*Sref;
                 LmaxStructure = lfStruc*mass*g;
                 L = min([LmaxAero, LmaxStructure]);                         % Constrained by aero or structure
                 CL(i) = L/(Sref*q(i));
@@ -141,10 +146,8 @@ classdef Turn < mission.Mission_Segment
                 alpha(i) = 0;
                 CD(i) = CD0 + k*CL(i)^2;
                 D = CD(i) * q(i) * Sref;
-
                 vAir_Body = BI * vAir_NED(i, :);
-                [power(i), thrust(i)] = ThrustBackCalculated(vAir_Body(1), T_set); % NEED FUNCTION
-
+                [power(i), thrust(i)] = ThrustBackCalculated(vAir_Body(1), T_set_); % NEED FUNCTION
                 [F_x_Body, F_z_Body] = Vehicle.reconcile_L_D(L, D, alpha(i));  %
                 F_x_Body = thrust(i) + F_x_Body;
                 F_y_Body = weight * sin(eulers(i, 1));
@@ -156,9 +159,11 @@ classdef Turn < mission.Mission_Segment
                 if i>1
                     dt = (psi(i)-psi(i-1))/omega;
                     t(i) = t(i-1) + dt;
-                    E(i) = E(i-1) + power(i)*dt;
-                    pos_NED(i, 3) = 0.5*(v_NED(i-1,:)+v_NED(i,:))*dt;
-                end               
+                end
+                E(i) = E_Start + trapz(t(1:i) , power(1:i));
+                pos_NED(i,1) = pos_NED_Start(1) + trapz(t(1:i) , v_NED(1:i, 1));
+                pos_NED(i,2) = pos_NED_Start(2) + trapz(t(1:i) , v_NED(1:i, 2));
+                pos_NED(i,3) = pos_NED_Start(3) + trapz(t(1:i) , v_NED(1:i, 3));
             end
             
 
