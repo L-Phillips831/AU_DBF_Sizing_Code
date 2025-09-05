@@ -193,7 +193,7 @@ classdef Turn < mission.Mission_Segment
 
 
 
-        function MissionTable = SustainedTurn(obj, dPsi, tab)
+        function tbl = SustainedTurn(obj, dPsi, tab)
             % Sustained Turn Mission Segment
 
             % Description: Takes heading change and the aircraft object.
@@ -202,6 +202,9 @@ classdef Turn < mission.Mission_Segment
             % acceleration is found from g and the sustained lf. Thrust
             % equals drag and propPower = Thrust*v. Gets pUse from the
             % propulsion model with input propPower.
+
+            % Note:
+            % - Alpha assumed 0 to match thrust/drag and lift/weight
 
         % General variables
             Sref = obj.vehicle.Sref;                                              
@@ -246,20 +249,22 @@ classdef Turn < mission.Mission_Segment
 
             % Euler angles set
             eulers(:, 3) = psi;
-            if dPsi > 0
-                eulers(:, 1) = 90; % Bank right to go right
-            elseif dPsi < 0
-                eulers(:, 1) = -90; % Bank left to go left
-            end
 
-            L = lf*mass*g;
+            weight = mass * g;
 
             % Sustained
             for i = 1:numVals_
+                eulers(i, 2) = alpha(i); % All assumed 0
+                bankAbs_lf = acosd(1/lf);
+                bankAbs_Aero = q(i)*Sref*CL_Max_Clean/(weight*k_Safe^2); % Need variables
+                bankAbs = min(bankAbs_lf, bankAbs_Aero);
+                if dPsi > 0
+                    eulers(i, 1) = bankAbs; % Bank right to go right
+                elseif dPsi < 0
+                    eulers(i, 1) = -bankAbs; % Bank left to go left
+                end
                 if i > 1
-                    eulers(i, 2) = alpha(i-1);
                     v_NED(i, :) = v_NED(i-1, :) + a_NED * dt;
-                    gamma(i) = atand(v_NED(i, 3) / sqrt(v_NED(i, 1)^2 + v_NED(i, 2)^2));
                 else
                     eulers(i, 2) = 0; % GIVE INITIAL
                 end     
@@ -278,52 +283,39 @@ classdef Turn < mission.Mission_Segment
                 % Body sum of forces
                 [F_x_Body, F_z_Body] = Vehicle.reconcile_L_D(L, D, alpha(i));  %
                 F_x_Body = thrust(i) + F_x_Body;
-                F_y_Body = weight * sin(eulers(i, 1));
                 % a body  by Fbody/mass
                 a_Body = [F_x_Body, F_y_Body, F_z_Body]/mass;
-                % a NED
-                a_NED = IB * a_Body;
-                % turn radius
+                a_NED = IB * a_Body; % Add gravity component, g
                 aCentr = g*sqrt(lf^2 - 1);
                 r = v_Aero^2 / aCentr;
-                omega = v_Aero/r;                                           % turn rate in rad/s
-                % position update w/ turn radius, psi progression, and 
-                % time update with dPsi/omega
-                % Energy
-
-                % r = v(i)^2 / aCentr; % Necessary?
-                thrust(i) = D(i);                                           
-                propPower = thrust(i)*v(i);                                 % Check with propulsion model
-                pUse = PowerCalc(propPower);                                % Check with propulsion model
+                omega = v_Aero/r;                                           % turn rate in rad/s                              
                 if i>1
                     dt = (psi(i)-psi(i-1))/omega;
                     t(i) = t(i-1)+ dt; 
                     pos_NED(i, :) = 0.5*(v_NED(i-1,:) + v_NED(i,:))*dt;
                     E(i) = E(i-1) + power(i)*(t(i) - t(i-1));
                 end
-
             end
             
-            % New structure/table
-            Snew.Time   = t;
-            Snew.E      = Energy;
-            Snew.Power  = pUse;
-            Snew.Distance = d;
-            Snew.V_Ground = vGround;
-            Snew.V = v;
-            Snew.Acceleration = a;
-            Snew.Altitude = h;
-            Snew.hDot   = hDot;
-            Snew.Mass   = mass*ones(obj.numVals,1);
-            Snew.Thrust = thrust;
-            Snew.q      = q;
-            Snew.CL     = CL;
-            Snew.CD     = CD;
-            Snew.Lift   = L;
-            Snew.Drag   = D;
-            Snew.LD     = LD;
+        % New structure/table. All vectors in NED
+            Snew.Airspeed_NED = vAir_NED;
+            Snew.Groundspeed_NED = v_NED;
+            Snew.Windspeed_NED = vWind_NED;
+            Snew.Eulers = eulers;
+            Snew.Position_NED = pos_NED;
+            Snew.Mass = mass*ones(numVals_,1);
+            Snew.Throttle = throttle;
+            Snew.Thrust_Body = thrust;
+            Snew.q = q;
+            Snew.CL = CL;
+            Snew.CD = CD;
+            Snew.Alpha = alpha;
+            Snew.Gamma = gamma;
+            Snew.Energy = E;
+            Snew.Power = power;
+            Snew.Time = t;
             Tnew = struct2table(Snew); % Make it a structure
-            MissionTable = [tab; Tnew]; % Concatenate tables
+            tbl = [tab; Tnew]; % Concatenate tables and return
         end
     end
 end
