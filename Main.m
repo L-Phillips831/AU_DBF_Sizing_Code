@@ -111,7 +111,27 @@ function cost = MOG_Solver(vehicle_params)
 
 
     % Generate Cost
-    score = 10;
+    score_GM_Norm = 10;
+    score_GM_AU = 0;
+    score_GM = score_GM_Norm/score_GM_AU;
+
+    get_income = @(n_Pass, n_Cargo, n_Laps) ...
+        (n_Pass*(6+(2*n_Laps))) + (n_Cargo * (10 + (8*n_Laps)));
+    get_cost = @(n_Laps, n_Pass, n_Cargo, EF) ...
+        n_Laps*(10+(n_Pass * 0.5) + (n_Cargo * 2)) * EF;
+    income_Norm = get_income(60, 20, 10); % 60 ducks, 20 pucks, 10 laps
+    cost_Norm = get_cost(10, 60, 20, 1);
+    score_M2_Norm = income_Norm - cost_Norm;
+    income_AU = get_income(n_Pass, n_Cargo, n_Laps);
+    cost_AU = get_cost(n_Laps, n_Pass, n_Cargo, EF);
+    score_M2_AU = income_AU - cost_AU;
+    score_M2 = score_M2_AU/score_M2_Norm;
+
+    score_M3_Norm = 35*8/0.9; % 35 ft banner, 0.9 RAC, 8 laps
+    score_M3_AU = L_Banner*N_Laps_M3*RAC;
+    score_M3 = score_M3_AU/score_M3_Norm;
+
+    score = score_GM + score_M2 + score_M3;
     cost = 1/score; % Higher score generates lower cost.
 
 end

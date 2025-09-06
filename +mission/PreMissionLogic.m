@@ -64,3 +64,8 @@ end
 [max_climb_hDot, max_climb_idx] = max(hDot);    % best climb rate
 max_climb_v = v(max_climb_idx);                 % best airspeed for climb
 max_climb_aoa = aoa(max_climb_idx);             % best aoa for climb
+
+
+
+% specific excess power = hDot = v*(T-D) / W
+% Make vRot = vLOF
