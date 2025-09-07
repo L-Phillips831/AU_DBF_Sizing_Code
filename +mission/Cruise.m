@@ -51,6 +51,7 @@ classdef Cruise < mission.Mission_Segment
 
             % Initialize table variables
             t         = tStart*ones(numVals_, 1);
+            pos_NED   = zeros(numVals_, 1);
             vAir_NED  = repmat(vAir_NED_Start, numVals_, 1); 
             v_NED     = repmat(v_NED_Start, numVals_, 1);
             vWind_NED = repmat(vWind_NED_Start, numVals_, 1); 
@@ -71,8 +72,10 @@ classdef Cruise < mission.Mission_Segment
             x_NED_Start   = pos_NED_Start(1);
             if abs(abs(psi_Start) - 180) < 1
                 delta_NED = - obj.dDelta;
+                direc_Scalar = -1;
             else
                 delta_NED = obj.dDelta;
+                direc_Scalar = 1;
             end
             x_NED_End     = x_NED_Start + delta_NED;
             x_NED         = linspace(x_NED_Start, x_NED_End, numVals_);     % Discretization Base
@@ -92,7 +95,7 @@ classdef Cruise < mission.Mission_Segment
             eulers(i, :)          = [0, alpha(i), psi_Start];
             CD(i)                 = CD0 + k * CL(i)^2;
             D                     = CD(i) * q(i) * Sref;
-            F_x_NED               = cosd(alpha(i)) * thrust(i) - D;
+            F_x_NED               = direc_Scalar * (cosd(alpha(i)) * thrust(i) - D); % Is this positive or negative x all the time?
             a_NED                 = [F_x_NED, 0, 0]/mass;
             if i < numVals_
                 t(i) = t(i-1) + dt;
