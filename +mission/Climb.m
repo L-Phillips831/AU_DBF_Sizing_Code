@@ -1,6 +1,13 @@
 classdef Climb < mission.Mission_Segment
     %CLIMB Summary of this class goes here
     %   Detailed explanation goes here
+
+%{
+To do:
+- numVals correction
+- Thrust function correction
+- for loop for time correction
+%}
     
     properties
         hEnd (1,1) double
@@ -65,6 +72,7 @@ classdef Climb < mission.Mission_Segment
             CD = CD0 + k*CL.^2;
             LD = CL ./ CD;
             D = L./LD;
+            [power(i), thrust(i)] = obj.Propulsion.get_Thrust(obj.T_set, vAir_x_Body);
             thrust = D + mass * g * sin(fpa);
             propPower = thrust * obj.vClimb;
             pUse = PropCalc(propPower(1))*ones(obj.numVals, 1);

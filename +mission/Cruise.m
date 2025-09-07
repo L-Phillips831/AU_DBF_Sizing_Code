@@ -86,7 +86,7 @@ classdef Cruise < mission.Mission_Segment
             alpha(i)              = ((weight/(q(i)*Sref)) - CL0) / CL_alpha;
             dt                    = abs(pos_NED(i, 1)) / v_NED(i, 1);
             vAir_x_Body           = cosd(alpha(i)) * vAir_NED(i, 1);
-            [power(i), thrust(i)] = ThrustBackCalculated(vAir_x_Body, obj.T_set);
+            [power(i), thrust(i)] = obj.vehicle.Propulsion.get_Thrust(obj.T_set, vAir_x_Body);
             L                     = weight - sind(alpha(i)) * thrust(i);
             CL(i)                 = L / (q(i) * Sref);
             eulers(i, :)          = [0, alpha(i), psi_Start];

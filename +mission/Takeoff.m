@@ -65,7 +65,7 @@ classdef Takeoff < mission.Mission_Segment
             aoa(1:nVals)     = aoaSet;                                        
             h(1:nVals)       = zeros(nVals, 1);                             
             for i = 1:nVals
-                [thrust(i), pUse(i)] = ThrustCalc(v(i), throttle); % ThrustCalc is a function needed from Cole's propulsion
+                [power(i), thrust(i)] = obj.Propulsion.get_Thrust(obj.T_set, v(i));
                 q(i)  = 0.5*rho(i)*v(i)^2;                            
                 CL(i) = CalcCL(aoa(i));                                     % Have not made this. would need CL0 and CL_Alpha constants
                 CD(i) = CD0 + k*CL(i)^2;                                    
@@ -88,7 +88,7 @@ classdef Takeoff < mission.Mission_Segment
             aoa(nVals+1 : nVals*2) = linspace(aoaSet, aoaLOF, nVals);      % Assume constant rotation rate
             h(nVals+1 : nVals*2) = zeros(nVals, 1);                  
             for i = nVals+1 : nVals*2
-                [thrust(i), pUse(i)] = ThrustCalc(v(i), throttle); % ThrustCalc is a function needed from Cole's propulsion
+            [power(i), thrust(i)] = obj.Propulsion.get_Thrust(obj.T_set, v(i));
                 q(i)  = 0.5*rho(i)*v(i)^2;                                  
                 CL(i) = CalcCL(aoa(i));                                     % Have not made this. would need CL0 and CL_Alpha constants
                 CD(i) = CD0 + k*CL(i)^2;                                    

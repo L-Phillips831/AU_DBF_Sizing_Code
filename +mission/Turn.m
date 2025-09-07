@@ -6,6 +6,8 @@ classdef Turn < mission.Mission_Segment
     % - Make sure wind is an accurate contribution to q(i)
     % - Bring in all necessary variables
     % - Find a way to track alpha well. Otherwise, set to 0
+    % - rework sustained turn to take thrust from throttle setting and
+    % get the turn properties achieved form that.
     
     properties       
         vehicle (1,1) Vehicle
@@ -68,7 +70,7 @@ classdef Turn < mission.Mission_Segment
             Sref     = obj.vehicle.Sref;                                              
             k        = obj.vehicle.k;                                                  
             CD0      = obj.vehicle.CD0;                                                
-            rho      = obj.vehicle.rho;                                        
+            rho      = obj.vehicle.rho;  
             g        = 9.81;     % Acceleration due to gravity [m/s^2] 
             numVals_ = obj.numVals;
             T_set_   = obj.T_set;
@@ -147,7 +149,7 @@ classdef Turn < mission.Mission_Segment
                 CD(i)                 = CD0 + k*CL(i)^2;
                 D                     = CD(i) * q(i) * Sref;
                 vAir_Body             = BI * vAir_NED(i, :);
-                [power(i), thrust(i)] = ThrustBackCalculated(vAir_Body(1), T_set_); % NEED FUNCTION
+                [power(i), thrust(i)] = obj.vehicle.Propulsion.get_Thrust(T_set_, vAir_Body(1));
                 [F_x_Body, F_z_Body]  = Vehicle.reconcile_L_D(L, D, alpha(i));  %
                 F_x_Body              = thrust(i) + F_x_Body;
                 F_y_Body              = weight * sin(eulers(i, 1));
