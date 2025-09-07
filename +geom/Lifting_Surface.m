@@ -47,10 +47,10 @@ classdef Lifting_Surface < geom.Component & handle
            obj.sweep = sweep_;
            obj.airfoil_str = airfoil_;
 
-           if (style_ == "Fin") || (style_ == "Standard")
+           if (style_ == "Fin") || (style_ == "HT") || (style_ == "Wing")
                obj.style = style_;
            else 
-               error("Style must be Fin or Standard");
+               error("Style must be Fin, HT, or Wing");
            end
            
 
@@ -91,7 +91,7 @@ classdef Lifting_Surface < geom.Component & handle
             tip_chord = root_chord * obj.taper;
 
             switch obj.style
-                case "Standard"
+                case {"HT", "Wing"}
                     str = [
                            "#====================================================================",...
                            "SURFACE",...

@@ -7,10 +7,21 @@ classdef Vehicle < handle
     properties
         name string                                     % Vehicle Name
         components geom.Component                       % struct of components
-        % Propulsion (1,1) powerplant.Propulsion          % Propulsion system
+
+        prop (1,1) powerplant.Propulsion          % Propulsion system
+
+        banner_length (1,1) double                      % Banner length [m]
+        num_pucks (1,1) uint16
+        num_ducks (1,1) uint16
+
+
         CG (3,1) double                                 % X,Y,Z loc of CG [m]
 
         W_S (1,1) double                                % Vehicle wing loading [kg/m^2]
+        mission_1_W (1,1) double
+        mission_2_W (1,1) double
+        mission_3_W (1,1) double
+        MTOW (1,1) double = 15/2.2
 
         S_ref (1,1) double                              % Vehicle reference area  [m]
         c_ref (1,1) double                              % Vehicle reference chord [m]
@@ -46,12 +57,15 @@ classdef Vehicle < handle
         % Params:
         %   - 
         %
-        function obj = Vehicle(name_, W_S_, mass_, HT_coeff_, VT_Coeff_)
+        function obj = Vehicle(name_, W_S_, num_pucks_, banner_length_, HT_coeff_, VT_Coeff_)
             obj.name = name_;
             obj.W_S = W_S_;
-            obj.mass = mass_;
+            obj.num_pucks = num_pucks_;
+            obj.banner_length = banner_length_;
             obj.HT_coeff = HT_coeff_;
             obj.VT_coeff = VT_Coeff_;
+
+            obj.num_ducks = ceil(floor(num_pucks_ * 3) / 2) * 2;
 
 
         end
@@ -70,8 +84,13 @@ classdef Vehicle < handle
         %   - updated vehicle object with component addition
         %
         function obj = add_wing(obj, x_loc_q4_, z_loc_, AR_, taper_, sweep_, airfoil_)
-            wing_area = obj.mass / obj.W_S;
+            wing_area = obj.MTOW / obj.W_S;
             wing_span = sqrt(AR_ * wing_area);
+            if wing_span > 5.0
+                wing_span = 5;
+                AR_ = wing_span^2 / wing_area;
+            end
+
             root_chord_ = wing_area / 0.5 / wing_span / (1 + taper_);
 
             airfoil_str = fullfile("Airfoils\", sprintf("%s.dat",airfoil_));
@@ -153,12 +172,27 @@ classdef Vehicle < handle
         % Returns:
         %   - updated vehicle object with added component
         %
-        function obj = add_fuselage(obj, length, diameter)
+        function obj = add_fuselage(obj)
+            duck_length = 2.5 * 0.00254;
+            puck_thickness = 1 * 0.00254;
+
+            diameter = 4.75 * 0.00254; % [in -> m]
+
+            elec_length = 9 * 0.00254;
+            length = elec_length + (obj.num_ducks / 2 * duck_length) + obj.num_pucks*puck_thickness;
+
             fuselage = geom.Fuselage(length, diameter, "Fuselage");
 
             obj.components(end+1) = fuselage;
 
         end
+
+
+        function obj = add_propulsion(obj, prop_struct)
+
+        end
+
+        
 
 
         % Method to complete analysis of the entire aircraft. Serves as a
@@ -171,11 +205,7 @@ classdef Vehicle < handle
         %
         function obj = analyze_airframe(obj)
 
-            % Weight Buildup
-            % for component = obj.components
-            %     component.get_mass();
-            %     obj.mass = obj.mass + component.mass;
-            % end
+            obj.get_weights();
 
             % Aero Buildup
             alpha_range = -6:2:20;
@@ -214,10 +244,119 @@ classdef Vehicle < handle
             CD = obj.CD_0 + obj.K1 * CL_req_ + obj.K2 * CL_req_^2;
 
         end
+
+        function obj = resize_geom(obj, new_E)
+            % Update new battery size
+            obj.prop.battery.energyCapacity = new_E;
+
+            % Redetermine MTOW
+            obj.get_weights();
+
+            % Resize Geometry
+
+            % --- Pass 1: Find and size wing ---
+            for component = obj.components
+                if isa(component, "Lifting_Surface") && component.style == "Wing"
+                    component.S = obj.W_S / obj.MTOW;
+                    component.span = min(5.0, sqrt(component.AR * component.S));
+                    component.AR   = component.span^2 / component.S;
+                    component.chord = component.S / 0.5 / component.span / (1 + component.taper);
+
+                    obj.S_ref = component.S;
+                    obj.c_ref = component.chord;
+                    obj.b_ref = component.span;
+
+                    root_chord_ = component.S / (0.5*component.span*(1+component.taper));
+                    component.x_loc = obj.aircraft_length*0.4 - 0.25*root_chord_;
+                end
+            end
+
+            % --- Pass 2: Size the rest ---
+            for component = obj.components
+                if isa(component, "Lifting_Surface")
+                    switch component.style
+                        case "HT"
+                            S_HT = obj.S_ref * obj.c_ref * obj.HT_coeff / obj.L_HT;
+                            span = sqrt(component.AR * S_HT);
+                            chord = S_HT / span;
+
+                            component.S = S_HT;
+                            component.span = span;
+                            component.chord = chord;
+                            component.x_loc = obj.aircraft_length - 0.25*chord;
+
+                        case "Fin"
+                            L_VT = obj.L_HT;
+                            S_VT = obj.S_ref * obj.b_ref * obj.VT_coeff / L_VT;
+                            span = sqrt(component.AR * S_VT);
+                            root_chord_ = S_VT / (0.5*span*(1+component.taper));
+
+                            component.S = S_VT;
+                            component.span = span;
+                            component.chord = root_chord_;
+                            component.x_loc = obj.aircraft_length - 0.25*root_chord_;
+                    end
+                end
+            end 
+
+            % Re-run analysis
+            obj.analyze_airframe();
+
+
+        end
         
     end
 
     methods (Access = private)
+
+
+        function obj = get_weights(obj)
+            E_Battery = obj.prop.battery.energyCapacity; % [Wh]
+            num_pucks_ = obj.num_pucks;
+            num_Ducks = obj.num_ducks;
+
+            L_Banner = obj.banner_length; % [m]
+
+            % To do:
+            % - Add a better description of method
+            % - Get Logan's formatting
+
+            W0 = 7; % [kg]
+            A = 5.098; % Based on previous years
+            C = -0.791; % Based on previous years
+            rho_Battery = 155; % [Wh/kg]
+            rho_Banner = 0.08; % [kg/m^2], approximation for light nylon and mesh
+            mass_Puck = 0.163; % [kg/puck]
+            mass_Duck = 0.017; % [kg/duck]
+
+            % Battery Weight
+            W_Battery = E_Battery / rho_Battery;
+
+            % Payload Weight
+            M1_payload = 0;
+            M2_payload = mass_Duck * num_Ducks + mass_Puck * num_pucks_;
+            M3_payload = 0.2 * L_Banner^2 * rho_Banner;
+
+            max_payload = max(M1_payload, M2_payload, M3_payload);
+
+            % Converge on MTOW
+            for i = 1:100
+                W_Empty_Frac = A*W0^C;
+                W_Empty = W_Empty_Frac * W0;
+                W0_Prev = W0;
+                W0 = W_Empty + max_payload + W_Battery;
+                if abs((W0_Prev - W0)/W0) < 0.001
+                    break;
+                end
+            end
+
+            obj.MTOW = W0;
+            obj.mission_1_W = W_Empty + M1_payload + W_Battery;
+            obj.mission_2_W = W_Empty + M2_payload + W_Battery;
+            obj.mission_3_W = W_Empty + M3_payload + W_Battery;
+
+
+        end
 
 
         % Method to generate the complete geom input file for AVL analysis.
