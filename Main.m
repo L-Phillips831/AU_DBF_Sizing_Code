@@ -130,11 +130,12 @@ function cost = MOG_Solver(banner_length, W_S, P2W, AR, num_pucks)
     m2_laps = 1;
 
 
-    while (true)
+   while (true)
         prev_tab = tab;
         last_t = t_final;
         last_E = E_final;
 
+        mission_2.clear();
         mission_2.add_cruise(mission_1_flag_dist/2, mission_1_throttle);
         mission_2.add_turn(180, 'instantaneous');
         mission_2.add_cruise(mission_1_flag_dist/2, mission_1_throttle);

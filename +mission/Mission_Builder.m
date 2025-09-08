@@ -56,6 +56,11 @@ classdef Mission_Builder < handle  % stupid in-place modification requirement
 
         end
 
+        function obj = clear(obj)
+
+            obj.segments = [];
+        end
+
 
         % Method for adding takeoff mission segment
         % Params:
