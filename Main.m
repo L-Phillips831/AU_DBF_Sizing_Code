@@ -127,8 +127,16 @@ function cost = MOG_Solver(banner_length, W_S, P2W, AR, num_pucks)
 
 
     % Generate Cost
+    % To do: find missing variables, create a ground mission function
+    % Logan checks: span call on RAC calculation, ducks call
+    % Missing: Energy_Battery_2, num_laps_2, num_laps_3
+    % num_laps_3
     score_GM_Norm = 10;
-    score_GM_AU = 0;
+    time_run = 1.5; % seconds
+    time_load_M2 = 0; % fix, f(#ducks/#pucks)
+    time_unload_M2 = 0; % fix, f(#ducks/#pucks)
+    time_load_M3 = 2; % seconds
+    score_GM_AU = 4*time_run + time_load_M2 + time_unload_M2 + time_load_M3;
     score_GM = score_GM_Norm/score_GM_AU;
 
     get_income = @(n_Pass, n_Cargo, n_Laps) ...
@@ -138,13 +146,15 @@ function cost = MOG_Solver(banner_length, W_S, P2W, AR, num_pucks)
     income_Norm = get_income(60, 20, 10); % 60 ducks, 20 pucks, 10 laps
     cost_Norm = get_cost(10, 60, 20, 1);
     score_M2_Norm = income_Norm - cost_Norm;
-    income_AU = get_income(n_Pass, n_Cargo, n_Laps);
-    cost_AU = get_cost(n_Laps, n_Pass, n_Cargo, EF);
+    income_AU = get_income(num_ducks, aircraft.num_pucks, num_laps_2);
+    EF = Energy_Battery_2 / 100;
+    cost_AU = get_cost(num_laps_2, aircraft.num_ducks, num_pucks, EF);
     score_M2_AU = income_AU - cost_AU;
     score_M2 = score_M2_AU/score_M2_Norm;
 
     score_M3_Norm = 35*8/0.9; % 35 ft banner, 0.9 RAC, 8 laps
-    score_M3_AU = L_Banner*N_Laps_M3*RAC;
+    RAC = max(0.9, 0.05*aircraft.b_ref + 0.75);
+    score_M3_AU = banner_length*num_laps_3*RAC;
     score_M3 = score_M3_AU/score_M3_Norm;
 
     score = score_GM + score_M2 + score_M3;
