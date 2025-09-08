@@ -8,7 +8,7 @@ classdef Vehicle < handle
         name string                                     % Vehicle Name
         components geom.Component                       % struct of components
 
-        prop (1,1) powerplant.Propulsion          % Propulsion system
+        prop powerplant.Propulsion                % Propulsion system
 
         banner_length (1,1) double                      % Banner length [m]
         num_pucks (1,1) uint16
@@ -97,7 +97,7 @@ classdef Vehicle < handle
 
             x_loc_ = x_loc_q4_ - 0.25*root_chord_;
 
-            wing = geom.Lifting_Surface("Wing", wing_area, AR_, root_chord_, wing_span, taper_, sweep_, "Standard", airfoil_str);
+            wing = geom.Lifting_Surface("Wing", wing_area, AR_, root_chord_, wing_span, taper_, sweep_, "Wing", airfoil_str);
             wing.place_surface(x_loc_, 0, z_loc_, 0);
 
             obj.components(end+1) = wing;
@@ -130,7 +130,7 @@ classdef Vehicle < handle
 
             airfoil_str = fullfile("Airfoils\", sprintf("%s.dat",airfoil_));
 
-            HT = geom.Lifting_Surface("HT", S_HT, AR_, chord, span, 1, 0, "Standard", airfoil_str);
+            HT = geom.Lifting_Surface("HT", S_HT, AR_, chord, span, 1, 0, "HT", airfoil_str);
             HT.place_surface(x_loc_, 0, 0, 0);
 
             obj.components(end+1) = HT;

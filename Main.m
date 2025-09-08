@@ -33,9 +33,10 @@ MOG_Solver([]);
 function cost = MOG_Solver(vehicle_params)
 
     % Define Vehicle
-    aircraft_mass = 6.8;    % [kg]
     aircraft_W_S = 5.21;    % [kg/m]
-    aircraft = Vehicle("Aircraft", aircraft_W_S, aircraft_mass, 0.7, 0.05);
+    num_pucks = 3;
+    banner_length = 10;
+    aircraft = Vehicle("Aircraft", aircraft_W_S, num_pucks, banner_length, 0.7, 0.05);
 
     % Add wing
     wing_q4 = 0.5; % [m]
@@ -46,9 +47,7 @@ function cost = MOG_Solver(vehicle_params)
     aircraft.add_wing(wing_q4, 0, AR_, taper_, sweep_, airfoil_);
 
     % Add fuselage
-    fuse_length = 1;  % [m]
-    fuse_diameter = 0.1;  % [m]
-    aircraft.add_fuselage(fuse_length, fuse_diameter);
+    aircraft.add_fuselage();
 
     % Add HT
     HT_AR_ = 3.0;
