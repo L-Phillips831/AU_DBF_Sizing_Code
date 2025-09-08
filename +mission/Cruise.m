@@ -28,7 +28,6 @@ classdef Cruise < mission.Mission_Segment
         % each step found with (Thrust - Drag) / mass.
 
         % To do:
-        % - down is positive
 
         % General variables
             Sref     = obj.vehicle.Sref;     
