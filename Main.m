@@ -111,6 +111,59 @@ function cost = MOG_Solver(banner_length, W_S, P2W, AR, num_pucks)
     % 
     % [t_total, E_total] = mission_1.run();
 
+
+    % Mission 2
+    mission_2 = mission.Mission_Builder(mission_2_laps, aircraft, mission_1_steps);
+
+    % Lap 1
+    mission_2.add_takeoff();
+    mission_2.add_climb(mission_1_cruise_alt, mission_1_throttle, 200);
+    mission_2.add_cruise(mission_1_flag_dist/2, mission_1_throttle);
+    mission_2.add_turn(180, 'instantaneous');
+    mission_2.add_cruise(mission_1_flag_dist/2, mission_1_throttle);
+    mission_2.add_turn(360, 'sustained');
+    mission_2.add_cruise(mission_1_flag_dist/2, mission_1_throttle);
+    mission_2.add_turn(180, 'instantaneous');
+    mission_2.add_cruise(mission_1_flag_dist/2, mission_1_throttle);
+    [t_final, E_final, tab] = mission_2.run();
+
+    m2_laps = 1;
+
+
+    while (true)
+        prev_tab = tab;
+        last_t = t_final;
+        last_E = E_final;
+
+        mission_2.add_cruise(mission_1_flag_dist/2, mission_1_throttle);
+        mission_2.add_turn(180, 'instantaneous');
+        mission_2.add_cruise(mission_1_flag_dist/2, mission_1_throttle);
+        mission_2.add_turn(360, 'sustained');
+        mission_2.add_cruise(mission_1_flag_dist/2, mission_1_throttle);
+        mission_2.add_turn(180, 'instantaneous');
+        mission_2.add_cruise(mission_1_flag_dist/2, mission_1_throttle);
+        [t_final, E_final, tab] = mission_2.run(prev_tab);
+
+
+
+        if abs(t_final - 300) > 1e-6
+            break;
+
+        elseif t_final > 300
+            t_final = last_t;
+            E_final = last_E;
+            tab = prev_tab;
+            break;
+        end
+
+  
+        m2_laps = m2_laps + 1;
+    end
+
+    mission_2_E = E_final;
+    mission_2_t = t_final;
+
+
     max_E = max([mission_1_E, mission_2_E, mission_3_E]);
     if max_E > 100
         cost = 10e6;

@@ -36,6 +36,7 @@ classdef Vehicle < handle
         mass (1,1) double                               % Vehicle mass  [kg]
         Cl_alpha (1,1) double                           % Vehicle Cl_alpha [-]
         Cl_0 (1,1) double                               % Vehicle Cl_0 [-]
+        Cl_max (1,1) double
         CM_alpha (1,1) double                           % Vehicle CM_alpha [-]
         SM (1,1) double                                 % Vehicle Static Margin [-]
         CD_0 (1,1) double                               % Vehicle zero-lift drag coefficient [-]
@@ -554,7 +555,7 @@ classdef Vehicle < handle
 
         
         [alpha_arr, sort_idx] = sort(alpha_arr);
-        CL_arr = CL_arr(sort_idx); obj.Cl_0 = CL_arr(alpha_arr == 0);
+        CL_arr = CL_arr(sort_idx); obj.Cl_0 = CL_arr(alpha_arr == 0); obj.Cl_max = max(CL_arr);
         Cm_arr = Cm_arr(sort_idx);
         CD_arr = CD_arr(sort_idx);
 

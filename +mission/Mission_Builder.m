@@ -26,21 +26,24 @@ classdef Mission_Builder < handle  % stupid in-place modification requirement
 
         % Method for simulating the current mission.
         % Params:
-        %   - none.
+        %   - tab (optional).
         % Returns:
         %   - t_total: the total time it took to complete the mission. Used
         %              in scoring analysis.
         %   - E_total: the total estimated energy usage during the mission.
         %              Used to verify geometry convergence
         %
-        function [t_total, E_total] = run(obj)
+        function [t_total, E_total, tab] = run(obj, varargin)
 
             flight_keys = ["Time","E","Power","Distance","V","Acceleration","Altitude","hDot", ...
                "Mass","Thrust","q","CL","CD","Lift","Drag","LD"];
 
-            tab = table('Size',[0 numel(flight_keys)], ...
-            'VariableNames',flight_keys, ...
-            'VariableTypes',"double");
+            if isempty(varargin)
+                tab = table('Size',[0 numel(flight_keys)], ...
+                'VariableNames',flight_keys, ...
+                'VariableTypes',"double");
+
+            end
 
             for segment = obj.segments
                 tab = segment.run(tab);
