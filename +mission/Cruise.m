@@ -28,8 +28,6 @@ classdef Cruise < mission.Mission_Segment
         % each step found with (Thrust - Drag) / mass.
 
         % To do:
-        % - Update euler angles with aoa, assuming level flight
-        % - Fix position tracking because y position changes after turns
         % - down is positive
 
         % General variables
@@ -46,13 +44,14 @@ classdef Cruise < mission.Mission_Segment
             vAir_NED_Start = tab.Airspeed_NED(end, :);
             v_NED_Start = tab.Groundspeed_NED(end, :);
             vWind_NED_Start = tab.Windspeed_NED(end, :);
+            pos_NED_Start = tab.Position_NED(end, :);
             tStart = tab.Time(end);
             psi_Start = tab.Eulers(end, 3);
             E_Start = tab.Energy(end);
 
             % Initialize table variables
             t         = tStart*ones(numVals_, 1);
-            pos_NED   = zeros(numVals_, 1);
+            pos_NED  = repmat(pos_NED_Start, numVals_, 1); 
             vAir_NED  = repmat(vAir_NED_Start, numVals_, 1); 
             v_NED     = repmat(v_NED_Start, numVals_, 1);
             vWind_NED = repmat(vWind_NED_Start, numVals_, 1); 
@@ -69,8 +68,6 @@ classdef Cruise < mission.Mission_Segment
             gamma     = zeros(numVals_,1);
 
             % Heading check for adding change in distance in +/- x_I
-            pos_NED_Start = tab.Position_NED(end, :);
-            x_NED_Start   = pos_NED_Start(1);
             if abs(abs(psi_Start) - 180) < 1
                 delta_NED = - obj.dDelta;
                 direc_Scalar = -1;
@@ -78,8 +75,8 @@ classdef Cruise < mission.Mission_Segment
                 delta_NED = obj.dDelta;
                 direc_Scalar = 1;
             end
-            x_NED_End     = x_NED_Start + delta_NED;
-            x_NED         = linspace(x_NED_Start, x_NED_End, numVals_);     % Discretization Base
+            x_NED_End     = pos_NED_Start(1) + delta_NED;
+            x_NED         = linspace(pos_NED_Start(1), x_NED_End, numVals_);     % Discretization Base
             pos_NED(:, 1) = x_NED;
 
             weight = mass * g;

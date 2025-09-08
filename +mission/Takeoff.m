@@ -17,17 +17,14 @@ classdef Takeoff < mission.Mission_Segment
 
         function tbl = run(obj)
         % TAKEOFF Construct an instance of this class
-        %{
-        - Will have ground run and transition
-        %}
-
 
         % To Do:
-        % - Make sure that thrust, lift, drag, and weight act in their
-        % respective directions for ground run + rotation
-        % - Put in the correct thrust/propulsion functions
         % - down is positive
-        % KEEP ADDING wind/air speed
+        % - KEEP ADDING wind/air speed
+        % - Make aoaSet just the aoaLOF, because it is a tail dragger
+        % - Calculate vLOF, weight = Cl_max * q_safe * Sref
+        % - Calculate vClimb
+            vClimb = obj.vClimb;
 
 
         % General variables
@@ -35,20 +32,23 @@ classdef Takeoff < mission.Mission_Segment
             k    = obj.k;
             CD0  = obj.CD0;
             rho  = obj.rho;
-            g = 9.81; 
+            Cl_alpha = obj.vehicle.Cl_alpha;
+            Cl_max = obj.vehicle.Cl_max;
+            Cl_0 = obj.vehicle.Cl_0;
 
         % Set/Initial values
             vWind_NED_Start = obj.vWind_NED;
-            vRot = obj.vRot;
-            vLOF = obj.vLOF;
-            vClimb = obj.vClimb;
             T_set = obj.T_set;
-            aoaSet = obj.aoaSet; % aoa at forward ground run
             grFriction = 0.05;
+            k_TO = 1.1;
+            g = 9.81; 
             mass = obj.mass;
             numVals_ = obj.numVals;
             numParts = 2; % for a taildragger with no rotation
             tTransition = 2;     % time (s) it takes to transition from fpa 0 to fpaClimb and vLOF to vClimb. May need some logic to be iteratively increased if throttle is above 1
+            weight = mass * g;
+            vLOF = sqrt(2*weight / (Cl_max * Sref * rho))/k_TO;
+            aoaSet = (Cl_max - Cl_0) / Cl_alpha;
 
         % Initialize table variables
             vAir_NED  = zeros(numParts*numVals_, 3);
@@ -79,7 +79,6 @@ classdef Takeoff < mission.Mission_Segment
             CD(1:numVals_) = CD0 + k*CL(1:numVals_).^2;
 
             dv = vAir_NED_x(2) - vAir_NED_x(1);
-            weight = mass * g;
 
             for i = 1:numVals_
                 if vAir_NED(i, 1) < 0

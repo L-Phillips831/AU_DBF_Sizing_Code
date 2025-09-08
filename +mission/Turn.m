@@ -141,7 +141,7 @@ classdef Turn < mission.Mission_Segment
                 vAir_NED(i, :) = v_NED(i, :);
                 vAero          = sqrt(vAir_NED(i, 1)^2 + vAir_NED(i, 2)^2);
                 q(i)           = 0.5*rho*vAero^2;
-                LmaxAero       = obj.vehicle.CL_Max_Clean*q(i)*Sref;
+                LmaxAero       = obj.vehicle.Cl_max*q(i)*Sref;
                 LmaxStructure  = lfStruc*mass*g;
                 L              = min([LmaxAero, LmaxStructure]);                         % Constrained by aero or structure
                 CL(i)          = L/(Sref*q(i));
@@ -266,7 +266,7 @@ classdef Turn < mission.Mission_Segment
             q_Val = 0.5 * rho * v_Calc^2;
             CD_Val = thrust_Val / (Sref * q_Val);
             CL_Val = sqrt((CD_Val - CD0)/k);
-            CL_Use = min(CL_Val, obj.vehicle.CL_Max_Clean);
+            CL_Use = min(CL_Val, obj.vehicle.Cl_max);
             lift_Val = CL_Use * q_Val * Sref;
             lf_Aero = lift_Val / (weight * k_Safe_^2);
             lf_Use = min(lf, lf_Aero);

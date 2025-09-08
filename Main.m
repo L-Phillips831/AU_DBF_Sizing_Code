@@ -118,6 +118,7 @@ function cost = MOG_Solver(banner_length, W_S, P2W, AR, num_pucks)
     % Lap 1
     mission_2.add_takeoff();
     mission_2.add_climb(mission_1_cruise_alt, mission_1_throttle, 200);
+    % next cruise distance = mission_1_flag_dist/2 - distance traveled
     mission_2.add_cruise(mission_1_flag_dist/2, mission_1_throttle);
     mission_2.add_turn(180, 'instantaneous');
     mission_2.add_cruise(mission_1_flag_dist/2, mission_1_throttle);
@@ -147,7 +148,7 @@ function cost = MOG_Solver(banner_length, W_S, P2W, AR, num_pucks)
 
 
 
-        if abs(t_final - 300) > 1e-6
+        if abs(t_final - 300) < 1e-6
             break;
 
         elseif t_final > 300
