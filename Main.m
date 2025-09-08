@@ -16,7 +16,7 @@ GA_optimizer = optimizer.GA_Optimizer(ga_settings);  % Create optimizer object
 
 
 % [best_score, best_params] = GA_optimizer.run(@MOG_Solver);
-MOG_Solver([]);
+MOG_Solver(10*0.3048, 5.16, 2, 4.4, 3);
 
 
 
@@ -30,21 +30,17 @@ MOG_Solver([]);
 %% Running the MOG Solver
 
 
-function cost = MOG_Solver(vehicle_params)
+function cost = MOG_Solver(banner_length, W_S, P2W, AR, num_pucks)
 
-    % Define Vehicle
-    aircraft_W_S = 5.21;    % [kg/m]
-    num_pucks = 3;
-    banner_length = 10;
-    aircraft = Vehicle("Aircraft", aircraft_W_S, num_pucks, banner_length, 0.7, 0.05);
+    %%% Define Vehicle
+    aircraft = Vehicle("Aircraft", W_S, P2W, num_pucks, banner_length, 0.7, 0.05);
 
     % Add wing
     wing_q4 = 0.5; % [m]
-    AR_ = 4.4;
     taper_ = 1;
     sweep_ = 0;
     airfoil_ = 'NACA2412';
-    aircraft.add_wing(wing_q4, 0, AR_, taper_, sweep_, airfoil_);
+    aircraft.add_wing(wing_q4, 0, AR, taper_, sweep_, airfoil_);
 
     % Add fuselage
     aircraft.add_fuselage();
@@ -59,6 +55,14 @@ function cost = MOG_Solver(vehicle_params)
     taper_ = 0.6;
     VT_airfoil_ = "NACA0012";
     aircraft.add_VT(VT_AR_, taper_, 0, VT_airfoil_);
+
+    % Add Propulsion System
+    bat_cells = 6;
+    bat_Wh = 100;
+    motor_kv = 220;
+    prop_pitch = 4;
+    prop_diam = 10;
+    aircraft.add_propulsion(bat_cells, bat_Wh, motor_kv, prop_pitch, prop_diam);
 
     aircraft.analyze_airframe()
     
@@ -106,6 +110,19 @@ function cost = MOG_Solver(vehicle_params)
     % 
     % [t_total, E_total] = mission_1.run();
 
+    max_E = max([mission_1_E, mission_2_E, mission_3_E]);
+    if max_E > 100
+        cost = 10e6;
+    end
+
+    safety_margin = 1.2;
+
+    while (max_E - aircraft.battery_capacity > 1)
+        aircraft.resize_geom(max_E*safety_margin);
+        mission_1.run();
+        mission_2.run();
+        mission_3.run();
+    end
 
 
 

@@ -39,7 +39,8 @@ classdef propeller
             Data = zeros(30,15,50);
             
             % Open .dat file and start reading line by line
-            fid = fopen(perfDataFile);
+            perfDataFile
+            fid = fopen(perfDataFile)
             tline = fgetl(fid);
             
             % Loop until a line has no characters in it. This should be end
@@ -73,6 +74,8 @@ classdef propeller
                     'Thrust_lbf','PWR_W','Torque_Nm','Thrust_N','THR2PWR_g2W','Mach','Reyn','FOM'};
                 perfData{j}.Properties.UserData.RPM = j*1000; % Sets custom table RPM property for later reference
             end
+
+            fclose(fid);
         end
     
     end

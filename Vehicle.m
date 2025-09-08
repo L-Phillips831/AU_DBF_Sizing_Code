@@ -9,15 +9,17 @@ classdef Vehicle < handle
         components geom.Component                       % struct of components
 
         prop powerplant.Propulsion                % Propulsion system
+        battery_capacity (1,1) double
 
         banner_length (1,1) double                      % Banner length [m]
-        num_pucks (1,1) uint16
-        num_ducks (1,1) uint16
+        num_pucks (1,1) double {mustBeInteger}
+        num_ducks (1,1) double {mustBeInteger}
 
 
         CG (3,1) double                                 % X,Y,Z loc of CG [m]
 
         W_S (1,1) double                                % Vehicle wing loading [kg/m^2]
+        P2W (1,1) double
         mission_1_W (1,1) double
         mission_2_W (1,1) double
         mission_3_W (1,1) double
@@ -57,9 +59,10 @@ classdef Vehicle < handle
         % Params:
         %   - 
         %
-        function obj = Vehicle(name_, W_S_, num_pucks_, banner_length_, HT_coeff_, VT_Coeff_)
+        function obj = Vehicle(name_, W_S_, P2W_, num_pucks_, banner_length_, HT_coeff_, VT_Coeff_)
             obj.name = name_;
             obj.W_S = W_S_;
+            obj.P2W = P2W_;
             obj.num_pucks = num_pucks_;
             obj.banner_length = banner_length_;
             obj.HT_coeff = HT_coeff_;
@@ -179,7 +182,7 @@ classdef Vehicle < handle
             diameter = 4.75 * 0.00254; % [in -> m]
 
             elec_length = 9 * 0.00254;
-            length = elec_length + (obj.num_ducks / 2 * duck_length) + obj.num_pucks*puck_thickness;
+            length = elec_length + (obj.num_ducks / 2 * duck_length) + obj.num_pucks*puck_thickness
 
             fuselage = geom.Fuselage(length, diameter, "Fuselage");
 
@@ -188,7 +191,23 @@ classdef Vehicle < handle
         end
 
 
-        function obj = add_propulsion(obj, prop_struct)
+        function obj = add_propulsion(obj, bat_cells, bat_Wh, motor_kv, prop_pitch, prop_diam)
+            V_per_cell = 3.7;
+            V_bat = V_per_cell * bat_cells;
+            capacity = bat_Wh / V_bat * 1000;
+            CRating = ceil(obj.P2W * obj.MTOW);
+            
+            bat_ = powerplant.battery(capacity, bat_cells, CRating, "LiPo");
+            esc_ = powerplant.esc(100, 100);
+            motor_ = powerplant.motor(motor_kv,100,0.1);
+
+            data_file = sprintf("+powerplant//Propeller Data Files//PER3_%.0fx%.0f.dat", prop_diam, prop_pitch);
+            propeller_ = powerplant.propeller(prop_pitch, prop_diam, data_file);
+
+            obj.prop = powerplant.Propulsion(bat_,esc_,motor_,propeller_);
+
+            obj.battery_capacity = bat_Wh;
+
 
         end
 
@@ -248,6 +267,7 @@ classdef Vehicle < handle
         function obj = resize_geom(obj, new_E)
             % Update new battery size
             obj.prop.battery.energyCapacity = new_E;
+            obj.battery_capacity = new_E;
 
             % Redetermine MTOW
             obj.get_weights();
@@ -337,7 +357,7 @@ classdef Vehicle < handle
             M2_payload = mass_Duck * num_Ducks + mass_Puck * num_pucks_;
             M3_payload = 0.2 * L_Banner^2 * rho_Banner;
 
-            max_payload = max(M1_payload, M2_payload, M3_payload);
+            max_payload = max([M1_payload, M2_payload, M3_payload]);
 
             % Converge on MTOW
             for i = 1:100
