@@ -130,7 +130,7 @@ function cost = MOG_Solver(banner_length, W_S, P2W, AR, num_pucks)
     % Generate Cost
     % To do: find missing variables, create a ground mission function
     % Logan checks: span call on RAC calculation, ducks call
-    % Missing: Energy_Battery_2, num_laps_2, num_laps_3
+    % Missing: num_laps_2, num_laps_3
     % num_laps_3
     score_GM_Norm = 10;
     time_run = 1.5; % seconds
@@ -148,7 +148,7 @@ function cost = MOG_Solver(banner_length, W_S, P2W, AR, num_pucks)
     cost_Norm = get_cost(10, 60, 20, 1);
     score_M2_Norm = income_Norm - cost_Norm;
     income_AU = get_income(num_ducks, aircraft.num_pucks, num_laps_2);
-    EF = Energy_Battery_2 / 100;
+    EF = aircraft.battery_capacity / 100;
     cost_AU = get_cost(num_laps_2, aircraft.num_ducks, num_pucks, EF);
     score_M2_AU = income_AU - cost_AU;
     score_M2 = score_M2_AU/score_M2_Norm;
