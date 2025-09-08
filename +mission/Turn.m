@@ -3,12 +3,12 @@ classdef Turn < mission.Mission_Segment
     %   Detailed explanation goes here
 
     % To do:
-    % - Make sure wind is an accurate contribution to q(i)
     % - Bring in all necessary variables
     % - Find a way to track alpha well. Otherwise, set to 0
     % - rework sustained turn to take thrust from throttle setting and
     % get the turn properties achieved form that.
     % - down is positive
+    % - Take wind out of the equation
     
     properties       
         vehicle (1,1) Vehicle
@@ -138,7 +138,7 @@ classdef Turn < mission.Mission_Segment
                 end
                 BI = Vehicle.get_DCM_BI(eulers(i, 1), eulers(i, 2), eulers(i, 3));
                 IB = BI';
-                vAir_NED(i, :) = v_NED(i, :) - vWind_NED(i, :);
+                vAir_NED(i, :) = v_NED(i, :);
                 vAero          = sqrt(vAir_NED(i, 1)^2 + vAir_NED(i, 2)^2);
                 q(i)           = 0.5*rho*vAero^2;
                 LmaxAero       = obj.vehicle.CL_Max_Clean*q(i)*Sref;
@@ -260,11 +260,24 @@ classdef Turn < mission.Mission_Segment
 
             weight = mass * g;
 
-            % Sustained
+            % Calculate Sustained turn constant values
+            v_Calc = sqrt(sum(vAir_NED_Start.^2));
+            [thrust_Val, power_Val] = obj.vehicle.Propulsion.get_Thrust_Power(obj.T_set, v_Calc);
+            q_Val = 0.5 * rho * v_Calc^2;
+            CD_Val = thrust_Val / (Sref * q_Val);
+            CL_Val = sqrt((CD_Val - CD0)/k);
+            CL_Use = min(CL_Val, obj.vehicle.CL_Max_Clean);
+            lift_Val = CL_Use * q_Val * Sref;
+            lf_Aero = lift_Val / (weight * k_Safe_^2);
+            lf_Use = min(lf, lf_Aero);
+
             for i = 1:numVals_
+                q(i) = q_Val;
+                CL(i) = CL_Use;
+                CD(i) = CD_Val;
+                thrust(i) = thrust_Val;
+                power(i) = power_Val;
                 eulers(i, 2) = alpha(i); % Assumed 0, small angle approx.
-                lf_Aero      = q(i)*Sref*obj.vehicle.CL_Max_Clean/(weight*k_Safe_^2);
-                lf_Use       = min(lf, lf_Aero);
                 if dPsi > 0
                     eulers(i, 1) = acosd(1/lf_Use); % Bank right to go right
                 elseif dPsi < 0
@@ -276,32 +289,19 @@ classdef Turn < mission.Mission_Segment
                 BI = Vehicle.get_DCM_BI(eulers(i, 1), eulers(i, 2), eulers(i, 3));
                 IB = BI';
                 vAir_NED(i, :) = v_NED(i, :) - vWind_NED(i, :);
-                vAero          = sqrt(vAir_NED(i, 1)^2 + vAir_NED(i, 2)^2);
-                q(i)           = 0.5*rho*vAero^2;
-                CL(i)          = L/(Sref*q(i));
-                CD(i)          = CD0 + k*CL(i)^2;
 
                 % alpha(i) = (CL(i) - CL0) / CL_Alpha;
                 alpha(i) = 0;
-
-                D                       = CD(i) * Sref * q(i);
-                thrust(i)               = D;
-                vAir_Body               = BI * vAir_NED(i, :);
-                [throttle(i), power(i)] = BackCalculation(thrust(i), vAir_Body(1)); % fix
-                [F_x_Body, F_z_Body]    = Vehicle.reconcile_L_D(L, D, alpha(i));  %
-                F_x_Body                = thrust(i) + F_x_Body;
-                F_y_Body                = sind(eulers(i,1)) * weight;
-                F_z_Body                = F_z_Body - cosd(eulers(i,1)) * weight;
-                a_Body                  = [F_x_Body, F_y_Body, F_z_Body]/mass;
-                a_NED                   = IB * a_Body;
-                aCentr                  = sqrt(a_NED(i, 1)^2 + a_NED(i,2)^2);
-                r                       = vAero^2 / aCentr;
-                omega                   = vAero/r;                        
+                
+                a_NED = [0, g * sqrt(lf_Use^2 - 1), 0]; % Account for roll and yaw
+                aCentr = sqrt(lf_Use^2 - 1);
+                r                       = v_Calc^2 / aCentr;
+                omega                   = v_Calc/r;                        
                 if i>1
                     dt = (psi(i)-psi(i-1))/omega;
                     t(i) = t(i-1)+ dt;
-                end                
-                E(i)         = E_Start + trapz(t(1:i) , power(1:i));
+                end
+                E(i) = E_Start + (t(i) - t(1)) * power(i);
                 pos_NED(i,1) = pos_NED_Start(1) + trapz(t(1:i) , v_NED(1:i, 1));
                 pos_NED(i,2) = pos_NED_Start(2) + trapz(t(1:i) , v_NED(1:i, 2));
                 pos_NED(i,3) = pos_NED_Start(3);
