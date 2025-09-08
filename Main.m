@@ -65,6 +65,7 @@ function cost = MOG_Solver(banner_length, W_S, P2W, AR, num_pucks)
     aircraft.add_propulsion(bat_cells, bat_Wh, motor_kv, prop_pitch, prop_diam);
 
     aircraft.analyze_airframe()
+    aircraft.get_banner_drag(100 * 0.3048)
     
 
     %%% Define Missions
