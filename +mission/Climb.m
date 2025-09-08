@@ -97,7 +97,7 @@ To do:
 
             for i = 1:numVals_
                 eulers(i, 2) = alpha(i) + gamma(i);
-                [power(i), thrust(i)] = obj.Propulsion.get_Thrust(obj.T_set, vAir_x_Body);
+                [thrust(i), power(i)] = obj.Propulsion.get_Thrust_Power(obj.T_set, vAir_x_Body);
                 q(i) = 0.5 * rho * v_Set^2;
                 CL(i) = weight / (q(i) * Sref);
                 CD(i) = CD0 + k*CL(i);
@@ -115,7 +115,8 @@ To do:
                     dt = d_Alt / v_NED(i, 2);
                     t(i) = t(i-1) + dt;
                 end
-                pos_NED(i, :) = pos_NED_Start + trapz(t(1:i), v_NED);
+                pos_NED(i, 1) = pos_NED_Start(1) + trapz(t(1:i), v_NED(1:i, 1));
+                pos_NED(i, 2) = pos_NED_Start(2) + trapz(t(1:i), v_NED(1:i, 2));
                 E(i) = E_Start + trapz(t(1:i), power(1:i));
             end
 

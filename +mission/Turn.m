@@ -150,7 +150,7 @@ classdef Turn < mission.Mission_Segment
                 CD(i)                 = CD0 + k*CL(i)^2;
                 D                     = CD(i) * q(i) * Sref;
                 vAir_Body             = BI * vAir_NED(i, :);
-                [power(i), thrust(i)] = obj.vehicle.Propulsion.get_Thrust(T_set_, vAir_Body(1));
+                [thrust(i), power(i)] = obj.vehicle.Propulsion.get_Thrust_Power(T_set_, vAir_Body(1));
                 [F_x_Body, F_z_Body]  = Vehicle.reconcile_L_D(L, D, alpha(i));  %
                 F_x_Body              = thrust(i) + F_x_Body;
                 F_y_Body              = weight * sin(eulers(i, 1));
@@ -262,7 +262,7 @@ classdef Turn < mission.Mission_Segment
 
             % Sustained
             for i = 1:numVals_
-                eulers(i, 2) = alpha(i); % Assumed 0
+                eulers(i, 2) = alpha(i); % Assumed 0, small angle approx.
                 lf_Aero      = q(i)*Sref*obj.vehicle.CL_Max_Clean/(weight*k_Safe_^2);
                 lf_Use       = min(lf, lf_Aero);
                 if dPsi > 0
@@ -287,7 +287,7 @@ classdef Turn < mission.Mission_Segment
                 D                       = CD(i) * Sref * q(i);
                 thrust(i)               = D;
                 vAir_Body               = BI * vAir_NED(i, :);
-                [throttle(i), power(i)] = BackCalculation(thrust(i), vAir_Body(1));
+                [throttle(i), power(i)] = BackCalculation(thrust(i), vAir_Body(1)); % fix
                 [F_x_Body, F_z_Body]    = Vehicle.reconcile_L_D(L, D, alpha(i));  %
                 F_x_Body                = thrust(i) + F_x_Body;
                 F_y_Body                = sind(eulers(i,1)) * weight;

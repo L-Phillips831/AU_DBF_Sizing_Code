@@ -35,23 +35,22 @@ classdef Takeoff < mission.Mission_Segment
             k    = obj.k;
             CD0  = obj.CD0;
             rho  = obj.rho;
-            g = obj.g;
+            g = 9.81; 
 
         % Set/Initial values
             vWind_NED_Start = obj.vWind_NED;
             vRot = obj.vRot;
             vLOF = obj.vLOF;
-            aoaLOF = obj.aoaLOF;
             vClimb = obj.vClimb;
             T_set = obj.T_set;
             aoaSet = obj.aoaSet; % aoa at forward ground run
-            grFriction = obj.grFriction;
+            grFriction = 0.05;
             mass = obj.mass;
             numVals_ = obj.numVals;
             numParts = 2; % for a taildragger with no rotation
-            tTrans = 2;     % time (s) it takes to transition from fpa 0 to fpaClimb and vLOF to vClimb. May need some logic to be iteratively increased if throttle is above 1
+            tTransition = 2;     % time (s) it takes to transition from fpa 0 to fpaClimb and vLOF to vClimb. May need some logic to be iteratively increased if throttle is above 1
 
-            % Initialize table variables
+        % Initialize table variables
             vAir_NED  = zeros(numParts*numVals_, 3);
             v_NED     = zeros(numParts*numVals_, 3);
             vWind_NED = repmat(vWind_NED_Start, numParts*numVals_, 1);
@@ -68,33 +67,41 @@ classdef Takeoff < mission.Mission_Segment
             power     = zeros(numParts*numVals_, 1);
             t         = zeros(numParts*numVals_, 1);
 
-        % Ground Run (NEW)
+        % Ground Run
             v_Air_Static = 0 - vWind_NED_Start;
             vAir_NED_x = linspace(v_Air_Static, vRot, numVals_);
             vAir_NED(1:numVals_, 1) = vAir_NED_x;
             v_NED(1:numVals_, :) = vAir_NED + vWind_NED;
-            aoa(1:numVals_) = aoaSet;
+            alpha(1:numVals_) = aoaSet;
+            eulers(1:numVals_,:) = [0, aoaSet, 0];
             q(1:numVals_) = 0.5 * rho * vAir_NED_x.^2;
             CL(1:numVals_) = CL0 + CL_alpha*aoaSet;
             CD(1:numVals_) = CD0 + k*CL(1:numVals_).^2;
 
             dv = vAir_NED_x(2) - vAir_NED_x(1);
+            weight = mass * g;
 
             for i = 1:numVals_
-            %{
-FOR LOOP:
-power and thrust from propulsion
-drag from aerodynamics and ground friction
-acceleration NED from thrust and drag
-time updated with dv / acceleration
-position updated with velocity
-Energy with trapz
-
-            %}
+                if vAir_NED(i, 1) < 0
+                    vAir_NED(i, 1) = 0;
+                end                
+                BI = Vehicle.get_DCM_BI(eulers(i, 1), eulers(i, 2), eulers(i, 3));
+                vAero = sqrt(sum(vAir_NED(i, :).^2));
+                q(i) = 0.5 * rho * vAero^2;
+                vAir_Body = BI*vAir_NED;
+                [thrust(i), power(i)] = obj.vehicle.Propulsion.get_Thrust_Power(obj.T_set, vAir_Body(1));
+                lift = CL(i)*Sref*q(i);
+                drag = CD(i)*Sref*q(i) + grFriction * (weight - lift); % Make sure drag is not >=
+                a_NED = [thrust - drag, 0, 0]/mass;
+                dt = dv / a_NED(1);
+                if i >1
+                    t(i) = t(i-1) + dt;
+                end
+                pos_NED(i, 1) = trapz(t(1:i), v_NED(1:i, 1));
+                E(i) = trapz(t(1:i), power(1:i));
             end
 
-
-
+%{
         % Rotation
             vGround(numVals_+1 : numVals_*2) = linspace(vRot, vLOF, numVals_); % Discretized from vRot to vLOF
             v(numVals_+1 : numVals_*2) = vGround(numVals_+1 : numVals_*2);      % Airspeed same as ground speed for rotation phase
@@ -114,46 +121,44 @@ Energy with trapz
                 d(i)          = 0.5*(vGround(i-1)+vGround(i))*dt(i);             
                 Energy(i) = Energy(i-1) + 0.5*(pUse(i-1)+pUse(i))*dt;
             end
+%}
 
+        % Climb Transition
+            % Steps to calculate gamma_Air_Climb:
+            q_Climb = 0.5 * rho * vClimb^2;
+            CL_Climb = weight / (Sref * q_Climb);
+            CD_Climb = CD0 + k*CL_Climb^2;
+            D_Climb = CD_Climb * Sref * q_Climb;
+            [thrust_Climb, ~] = obj.Propulsion.get_Thrust_Power(obj.T_set, vClimb);
+            pSpec_Climb = vClimb * (thrust_Climb - D_Climb) / weight;
+            gamma_Air_Climb = asind(pSpec_Climb / vClimb);
+            
+            % Discretizations:
+            vAir_total = linspace(vLOF, vClimb, numVals_);
+            gamma_Air = linspace(0, gamma_Air_Climb, numVals_);
+            dt = tTransition / (numVals_ - 1);
+            % gamma air and vAir_total determine airspeed vector
+            % convert to v_NED with windspeed
+            % get actual gamma
 
-        % Transition
-        % Notes:
-        % - Separate vGround and hDot. Discretized over v. Use fpa to solve
-            v(2*numVals_+1 : numVals_*3) = linspace(vLOF, vClimb, numVals_);   % Discretized from vLOF to vClimb
-            vGroundClimb = sqrt(vClimb^2 - hDotClimb^2);                    % Ground speed at end of discretization
-            fpaClimb     = atan2(hDotClimb, vGroundClimb);                  % fpa at end of discretization
-            fpaTrans          = linspace(0, fpaClimb, numVals_);                  % Assume constant transition rate
-            dtTrans = tTrans / (numVals_ - 1);
-            dvTrans = v(2*numVals_ + 2) - v(2*numVals_ + 1);
-            
-            for i = 2*numVals_+1 : numVals_*3
-            vGround(i) = v(i) .* cos(fpaTrans(i));
-            hDot(i) = v(i).*sin(fpaTrans(i));
-            a(i) = ones(numVals_, 1) * dvTrans/dtTrans;
-            a_X = a(i) * cos(fpaTrans(i));
-            a_Y = a(i) * sin(fpaTrans(i));
-            q(i) = 0.5*rho*v(i)^2;
-            CL(i) = CL(2*numVals_); % Assume same CL as liftoff
-            CD(i) = CD(2*numVals_); % Assume same CD as liftoff
-            LD(i) = CL(i) / CD(i);
-            L(i) = q(i) * CL(i) * Sref;
-            D(i) = q(i) * CD(i) * Sref;
-            T_cos_aoa = mass*a_X + L*sin(fpaTrans(i)) - D*cos(fpaTrans(i));
-            T_sin_aoa = mass*(a_Y +g) + D*sin(fpaTrans(i)) - L*cos(fpaTrans(i));
-            aoa(i) = atan(T_sin_aoa/T_cos_aoa);
-            thrust(i) = T_cos_aoa(i) / cos(aoa(i));
-            [throttle(i), pUse(i)] = GetThrottle(thrust(i), v(i)); % Not the proper function call.
-            % Check that throttle is not above 1. If so, lengthen transition.
-            if i > 2*numVals_ + 1
-                t(i) = t(i-1) + dtTrans;
-                Energy(i) = Energy(i-1) + pUse(i)*dtTrans;
-            else
-                t(i) = t(i-1);
-                Energy(i) = Energy(i-1);
-            end
-            h(i) = cumtrapz(t, hDot);
-            d(i) = d(2*numVals_) + cumtrapz(t(2*numVals_+1:i), vGround(2*numVals_+1:i));
-            
+            for i = (numVals_ + 1):(2*numVals_)
+                if (i-numVals_) > 1
+                    t(i) = t(i-1) + dt;
+                end
+                q(i) = 0.5 * rho * vAir_total(i-numVals_)^2;
+                CL(i) = weight / (Sref * q(i));
+                alpha(i) = (CL(i) - CL0)  / CL_alpha;
+                CD(i) = CD0 + k*CL(i)^2;
+                [thrust(i), power(i)] = obj.Propulsion.get_Thrust(obj.T_set, vAir_total(i-numVals_));
+                vAir_NED(i, 3) = vAir_total(i-numVals_)*sind(gamma_Air(i-numVals_));
+                vAir_NED(i, 1) = vAir_total(i-numVals_)*cosd(gamma_Air(i-numVals_));
+                v_NED(i, :) = vWind_NED(i, :) + vAir_NED(i, :);
+                gamma(i) = atand(v_NED(i, 3) / v_NED(i, 1));
+                eulers(i, :) = [0, gamma(i) + alpha(i), 0];
+                pos_NED(i, 1) = pos_NED_Start(1) + trapz(t(1:i), v_NED(1:i, 1));
+                pos_NED(i, 2) = pos_NED_Start(2) + trapz(t(1:i), v_NED(1:i, 2));
+                pos_NED(i, 3) = pos_NED_Start(3) + trapz(t(1:i), v_NED(1:i, 3));
+                E(i) = E_Start + trapz(t(1:i), power(1:i));
             end
 
         % New structure/table. All vectors in NED
