@@ -8,6 +8,7 @@ classdef Turn < mission.Mission_Segment
     % - Find a way to track alpha well. Otherwise, set to 0
     % - rework sustained turn to take thrust from throttle setting and
     % get the turn properties achieved form that.
+    % - down is positive
     
     properties       
         vehicle (1,1) Vehicle
@@ -89,10 +90,10 @@ classdef Turn < mission.Mission_Segment
 
         % Initialize table variables
             t         = tStart*ones(numVals_, 1);
-            vAir_NED  = repmat(vAir_NED_Start, numVals_, 1); % nx3
-            v_NED     = repmat(v_NED_Start, numVals_, 1); % nx3
-            vWind_NED = repmat(vWind_NED_Start, numVals_, 1); % nx3
-            pos_NED   = pos_NED_Start*ones(numVals_, 3);
+            vAir_NED  = repmat(vAir_NED_Start, numVals_, 1); 
+            v_NED     = repmat(v_NED_Start, numVals_, 1); 
+            vWind_NED = repmat(vWind_NED_Start, numVals_, 1); 
+            pos_NED   = repmat(pos_NED_Start, numVals_, 1);
             throttle  = obj.T_set*ones(numVals_, 1);
             thrust    = zeros(numVals_, 1);
             q         = zeros(numVals_, 1);

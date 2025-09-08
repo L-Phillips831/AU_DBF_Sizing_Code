@@ -11,12 +11,11 @@ classdef Cruise < mission.Mission_Segment
     end
     
     methods
-        function obj = Cruise(dDelta, T_set, numVals, vehicle, windVec)
+        function obj = Cruise(dDelta, T_set, numVals, vehicle)
             obj.T_set = T_set;
             obj.dDelta = dDelta;
             obj.vehicle = vehicle;
             obj.numVals_ = numVals;
-            obj.windVec = windVec;
            
         end
 
@@ -30,6 +29,8 @@ classdef Cruise < mission.Mission_Segment
 
         % To do:
         % - Update euler angles with aoa, assuming level flight
+        % - Fix position tracking because y position changes after turns
+        % - down is positive
 
         % General variables
             Sref     = obj.vehicle.Sref;     
@@ -105,25 +106,24 @@ classdef Cruise < mission.Mission_Segment
         end
 
         % New structure/table. All vectors in NED
-            Snew.Airspeed_NED = vAir_NED;
+            Snew.Airspeed_NED    = vAir_NED;
             Snew.Groundspeed_NED = v_NED;
-            Snew.Windspeed_NED = vWind_NED;
-            Snew.Eulers = eulers;
-            Snew.Position_NED = pos_NED;
-            Snew.Mass = mass*ones(numVals_,1);
-            Snew.Throttle = throttle;
-            Snew.Thrust_Body = thrust;
-            Snew.q = q;
-            Snew.CL = CL;
-            Snew.CD = CD;
-            Snew.Alpha = alpha;
-            Snew.Gamma = gamma;
-            Snew.Energy = E;
-            Snew.Power = power;
-            Snew.Time = t;
+            Snew.Windspeed_NED   = vWind_NED;
+            Snew.Eulers          = eulers;
+            Snew.Position_NED    = pos_NED;
+            Snew.Mass            = mass*ones(numVals_,1);
+            Snew.Throttle        = throttle;
+            Snew.Thrust_Body     = thrust;
+            Snew.q               = q;
+            Snew.CL              = CL;
+            Snew.CD              = CD;
+            Snew.Alpha           = alpha;
+            Snew.Gamma           = gamma;
+            Snew.Energy          = E;
+            Snew.Power           = power;
+            Snew.Time            = t;
             Tnew = struct2table(Snew); % Make it a structure
             tbl = [tab; Tnew]; % Concatenate tables and return
-
         end
         
     end
