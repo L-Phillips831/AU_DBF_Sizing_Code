@@ -92,7 +92,7 @@ classdef Cruise < mission.Mission_Segment
             eulers(i, :)          = [0, alpha(i), psi_Start];
             CD(i)                 = Cd_0 + k * CL(i)^2;
             D                     = CD(i) * q(i) * Sref;
-            F_x_NED               = direc_Scalar * (cosd(alpha(i)) * thrust(i) - D); % Is this positive or negative x all the time?
+            F_x_NED               = direc_Scalar * (cosd(alpha(i)) * thrust(i) - D);
             a_NED                 = [F_x_NED, 0, 0]/mass;
             if i < numVals_
                 t(i)       = t(i-1) + dt;

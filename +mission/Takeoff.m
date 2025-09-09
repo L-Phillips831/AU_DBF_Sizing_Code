@@ -23,9 +23,7 @@ classdef Takeoff < mission.Mission_Segment
             k        = obj.k;
             Cd_0     = obj.Cd_0;
             rho      = obj.rho;
-            Cl_alpha = obj.vehicle.Cl_alpha;
             Cl_max   = obj.vehicle.Cl_max;
-            Cl_0     = obj.vehicle.Cl_0;
 
         % Set/Initial values
             vWind_NED_Start = obj.vWind_NED;
@@ -39,7 +37,7 @@ classdef Takeoff < mission.Mission_Segment
             tTransition     = 2;
             weight          = mass * g;
             vLOF            = sqrt(2*weight / (Cl_max * Sref * rho))/k_TO;
-            aoaSet          = (Cl_max - Cl_0) / Cl_alpha;     
+            aoaSet          = obj.vehicle.get_req_alpha(obj, Cl_max);   
 
         % Initialize table variables
             vAir_NED  = zeros(numParts*numVals_, 3);
@@ -66,7 +64,7 @@ classdef Takeoff < mission.Mission_Segment
             alpha(1:numVals_)       = aoaSet;
             eulers(1:numVals_,:)    = [0, aoaSet, 0];
             q(1:numVals_)           = 0.5 * rho * vAir_NED_x.^2;
-            CL(1:numVals_)          = Cl_0 + Cl_alpha*aoaSet;
+            CL(1:numVals_)          = Cl_max;
             CD(1:numVals_)          = Cd_0 + k*CL(1:numVals_).^2;
 
             dv = vAir_NED_x(2) - vAir_NED_x(1);
@@ -139,7 +137,7 @@ classdef Takeoff < mission.Mission_Segment
                 end
                 q(i)     = 0.5 * rho * vAir_total(i-numVals_)^2;
                 CL(i)    = weight / (Sref * q(i));
-                alpha(i) = (CL(i) - Cl_0)  / Cl_alpha;
+                alpha(i) = obj.vehicle.get_req_alpha(obj, CL(i));
                 CD(i)    = Cd_0 + k*CL(i)^2;
                 [thrust(i), power(i)] = obj.Propulsion.get_Thrust(obj.T_set, vAir_total(i-numVals_));
                 vAir_NED(i, 3) = - hDot_climb;
