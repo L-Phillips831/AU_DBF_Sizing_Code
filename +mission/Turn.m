@@ -70,7 +70,7 @@ classdef Turn < mission.Mission_Segment
         % General variables
             Sref     = obj.vehicle.Sref;                                              
             k        = obj.vehicle.k;                                                  
-            CD0      = obj.vehicle.CD0;                                                
+            CD0      = obj.vehicle.Cd_0;                                                
             rho      = obj.vehicle.rho;  
             g        = 9.81;     % Acceleration due to gravity [m/s^2] 
             numVals_ = obj.numVals;
@@ -208,7 +208,7 @@ classdef Turn < mission.Mission_Segment
         % General variables
             Sref     = obj.vehicle.Sref;                                              
             k        = obj.vehicle.k;                                                  
-            CD0      = obj.vehicle.CD0;                                                
+            CD0      = obj.vehicle.Cd_0;                                                
             rho      = obj.vehicle.rho;                                       
             g        = 9.81;                                                  
             lf       = obj.lfSust;
@@ -277,6 +277,7 @@ classdef Turn < mission.Mission_Segment
                 CD(i) = CD_Val;
                 thrust(i) = thrust_Val;
                 power(i) = power_Val;
+                alpha(i) = 0;
                 eulers(i, 2) = alpha(i); % Assumed 0, small angle approx.
                 if dPsi > 0
                     eulers(i, 1) = acosd(1/lf_Use); % Bank right to go right
@@ -289,11 +290,9 @@ classdef Turn < mission.Mission_Segment
                 BI = Vehicle.get_DCM_BI(eulers(i, 1), eulers(i, 2), eulers(i, 3));
                 IB = BI';
                 vAir_NED(i, :) = v_NED(i, :) - vWind_NED(i, :);
-
-                % alpha(i) = (CL(i) - CL0) / CL_Alpha;
-                alpha(i) = 0;
-                
-                a_NED = [0, g * sqrt(lf_Use^2 - 1), 0]; % Account for roll and yaw
+                a_Body = [0, 0, -g*lf_Use];
+                a_NED = IB*a_Body;
+                a_NED = a_NED + [0, 0, g]; 
                 aCentr = sqrt(lf_Use^2 - 1);
                 r                       = v_Calc^2 / aCentr;
                 omega                   = v_Calc/r;                        

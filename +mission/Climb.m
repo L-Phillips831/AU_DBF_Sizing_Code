@@ -47,7 +47,7 @@ To do:
         % General variables
             Sref     = obj.vehicle.Sref;     
             k        = obj.vehicle.k;            
-            CD0      = obj.vehicle.CD0;
+            CD0      = obj.vehicle.Cd_0;
             CL0      = obj.vehicle.CL0;
             CL_alpha = obj.vehicle.CL_alpha;
             rho      = obj.vehicle.rho;      

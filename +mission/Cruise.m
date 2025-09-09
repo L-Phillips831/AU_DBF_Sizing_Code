@@ -3,8 +3,8 @@ classdef Cruise < mission.Mission_Segment
     %   Detailed explanation goes here
     
     properties (Access = private)
-        T_set (1,1) double
-        dDelta (1,1) double
+        T_set   (1,1) double
+        dDelta  (1,1) double
         vehicle (1,1) Vehicle
         numVals (1,1) double
         windVec (3, 1) double
@@ -12,9 +12,9 @@ classdef Cruise < mission.Mission_Segment
     
     methods
         function obj = Cruise(dDelta, T_set, numVals, vehicle)
-            obj.T_set = T_set;
-            obj.dDelta = dDelta;
-            obj.vehicle = vehicle;
+            obj.T_set    = T_set;
+            obj.dDelta   = dDelta;
+            obj.vehicle  = vehicle;
             obj.numVals_ = numVals;
            
         end
@@ -32,25 +32,25 @@ classdef Cruise < mission.Mission_Segment
         % General variables
             Sref     = obj.vehicle.Sref;     
             k        = obj.vehicle.k;            
-            CD0      = obj.vehicle.CD0;
-            CL0      = obj.vehicle.CL0;
-            CL_alpha = obj.vehicle.CL_alpha;
+            Cd_0      = obj.vehicle.Cd_0;
             rho      = obj.vehicle.rho;      
             g        = 9.81;    % Acceleration due to gravity [m/s^2]
             numVals_ = obj.numVals;
+            Cl_alpha = obj.vehicle.Cl_alpha;
+            Cl_0     = obj.vehicle.Cl_0;
 
         % Pull start of segment conditions
-            vAir_NED_Start = tab.Airspeed_NED(end, :);
-            v_NED_Start = tab.Groundspeed_NED(end, :);
+            vAir_NED_Start  = tab.Airspeed_NED(end, :);
+            v_NED_Start     = tab.Groundspeed_NED(end, :);
             vWind_NED_Start = tab.Windspeed_NED(end, :);
-            pos_NED_Start = tab.Position_NED(end, :);
-            tStart = tab.Time(end);
-            psi_Start = tab.Eulers(end, 3);
-            E_Start = tab.Energy(end);
+            pos_NED_Start   = tab.Position_NED(end, :);
+            tStart          = tab.Time(end);
+            psi_Start       = tab.Eulers(end, 3);
+            E_Start         = tab.Energy(end);
 
             % Initialize table variables
             t         = tStart*ones(numVals_, 1);
-            pos_NED  = repmat(pos_NED_Start, numVals_, 1); 
+            pos_NED   = repmat(pos_NED_Start, numVals_, 1); 
             vAir_NED  = repmat(vAir_NED_Start, numVals_, 1); 
             v_NED     = repmat(v_NED_Start, numVals_, 1);
             vWind_NED = repmat(vWind_NED_Start, numVals_, 1); 
@@ -83,19 +83,19 @@ classdef Cruise < mission.Mission_Segment
         for i = 1:numVals_
             vAir_NED(i, :)        = v_NED(i, :) - vWind_NED(i, :);
             q(i)                  = 0.5 * rho * vAir_NED(i, 1)^2;
-            alpha(i)              = ((weight/(q(i)*Sref)) - CL0) / CL_alpha;
+            alpha(i)              = ((weight/(q(i)*Sref)) - Cl_0) / Cl_alpha;
             dt                    = abs(pos_NED(i, 1)) / v_NED(i, 1);
             vAir_x_Body           = cosd(alpha(i)) * vAir_NED(i, 1);
             [thrust(i), power(i)] = obj.vehicle.Propulsion.get_Thrust_Power(obj.T_set, vAir_x_Body);
             L                     = weight - sind(alpha(i)) * thrust(i);
             CL(i)                 = L / (q(i) * Sref);
             eulers(i, :)          = [0, alpha(i), psi_Start];
-            CD(i)                 = CD0 + k * CL(i)^2;
+            CD(i)                 = Cd_0 + k * CL(i)^2;
             D                     = CD(i) * q(i) * Sref;
             F_x_NED               = direc_Scalar * (cosd(alpha(i)) * thrust(i) - D); % Is this positive or negative x all the time?
             a_NED                 = [F_x_NED, 0, 0]/mass;
             if i < numVals_
-                t(i) = t(i-1) + dt;
+                t(i)       = t(i-1) + dt;
                 v_NED(i+1) = v_NED(i) + a_NED*dt;
             end
             E(i) = E_Start + trapz(t(1:i) , power(1:i));
