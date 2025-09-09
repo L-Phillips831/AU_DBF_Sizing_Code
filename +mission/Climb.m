@@ -10,7 +10,6 @@ To do:
     properties
         hEnd (1,1) double
         vClimb (1,1) double
-        hDotClimb (1,1) double
         vehicle (1,1) Vehicle
         numVals (1,1) double
 
@@ -25,10 +24,9 @@ To do:
         %   - hDotClimb: climb rate
         %   - vehicle: vehicle class with solved sizing
         %
-        function obj = Climb(hEnd, vClimb, hDotClimb, numVals, vehicle)
+        function obj = Climb(hEnd, vClimb, numVals, vehicle)
             obj.hEnd = hEnd;
             obj.vClimb = vClimb;
-            obj.hDotClimb = hDotClimb;
             obj.vehicle = vehicle;
             obj.numVals = numVals;
 
@@ -47,16 +45,13 @@ To do:
         % General variables
             Sref     = obj.vehicle.Sref;     
             k        = obj.vehicle.k;            
-            CD0      = obj.vehicle.Cd_0;
-            CL0      = obj.vehicle.CL0;
-            CL_alpha = obj.vehicle.CL_alpha;
+            Cd_0      = obj.vehicle.Cd_0;
             rho      = obj.vehicle.rho;      
             g        = 9.81;    % Acceleration due to gravity [m/s^2]
             numVals_ = obj.numVals;
-            v_Set    = obj.v_Climb;
+            vClimb_    = obj.vClimb;
 
             % Initialize table variables
-            h_Start = tab.Altitude(end);
             h_End = obj.hEnd;
             tStart  = tab.Time(end);
             E_Start  = tab.Energy(end);
@@ -78,7 +73,7 @@ To do:
             CD        = zeros(numVals_, 1);
             mass      = (tab.mass(end));                   
             power     = zeros(numVals_,1);
-            E         = E_Start*ones(numVals_, 1);
+            E         = zeros(numVals_,1);
             alpha     = zeros(numVals_,1);
             eulers    = repmat(eulers_Start, numVals_, 1);
             gamma     = gamma_Set*ones(numVals_,1);  
@@ -90,34 +85,38 @@ To do:
                 direc_Scalar = 1;
             end
 
-            % Prior calcs:
-            weight = mass * g;
-            d_Alt = h(2) - h(1);
-            pos_NED(:, 3) = linspace(h_Start, h_End, numVals_);
+            % Non-iterative calcs:
+            weight        = mass * g;
+            pos_NED(:, 3) = linspace(pos_NED_Start(3), -h_End, numVals_);
+            d_Alt         = pos_NED(2, 3) - pos_NED(1, 3);
+            [thrust_use, power_use] = obj.Propulsion.get_Thrust_Power(obj.T_set, vClimb_);
+            q_use = 0.5 * rho * vClimb_^2;
+            CL_use = weight / (q_use * Sref);
+            alpha_use = obj.vehicle.get_req_alpha(obj, CL_use);
+            CD_use = Cd_0 + k*CL_use;
+            drag = CD_use * Sref * q_use;
+            pSpec = (thrust_use - drag) * vClimb_ / weight;
+            dt = d_Alt / pSpec;
 
+        % Tracking
             for i = 1:numVals_
-                eulers(i, 2) = alpha(i) + gamma(i);
-                [thrust(i), power(i)] = obj.Propulsion.get_Thrust_Power(obj.T_set, vAir_x_Body);
-                q(i) = 0.5 * rho * v_Set^2;
-                CL(i) = weight / (q(i) * Sref);
-                CD(i) = CD0 + k*CL(i);
-                alpha(i) = (CL(i) - CL0) / CL_alpha;
-
-                drag = CD(i) * Sref * q(i);
-                pSpec = (thrust(i) - drag) * v_Set / weight;
-                vAir_NED(i, 3) = pSpec;
-                vAir_NED(i, 1) = direc_Scalar*sqrt(v_Set^2 - pSpec^2); % direction
-                v_NED(i, 3) = pSpec;
-                v_NED(i, :) = vWind_NED(i, :) + vAir_NED(i, :);
-                gamma(i) = atand(v_NED(i, 3) / v_NED(i, 1));
-
-                if i > 1
-                    dt = d_Alt / v_NED(i, 2);
-                    t(i) = t(i-1) + dt;
+                vAir_NED(i, 3)  = -pSpec;
+                vAir_NED(i, 1)  = direc_Scalar*sqrt(vClimb_^2 - pSpec^2); 
+                v_NED(i, :)     = vAir_NED(i, :) + vWind_NED(i, :);
+                alpha(i)        = alpha_use;
+                gamma(i)        = atand(-v_NED(i, 3) / v_NED(i, 1));
+                eulers(i, 2)    = alpha(i) + gamma(i);
+                thrust(i)       = thrust_use;
+                q(i)            = q_use;
+                CL(i)           = CL_use;
+                CD(i)           = CD_use;
+                power(i)        = power_use;
+                if i>1
+                t(i) = t(i-1) + dt;
                 end
+                E(i)          = E_Start + (t(i) - t(1))*power_use;                
                 pos_NED(i, 1) = pos_NED_Start(1) + trapz(t(1:i), v_NED(1:i, 1));
                 pos_NED(i, 2) = pos_NED_Start(2) + trapz(t(1:i), v_NED(1:i, 2));
-                E(i) = E_Start + trapz(t(1:i), power(1:i));
             end
 
         % New structure/table. All vectors in NED
