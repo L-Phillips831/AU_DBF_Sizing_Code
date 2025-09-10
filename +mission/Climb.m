@@ -16,14 +16,7 @@ To do:
     end
     
     methods
-        
-        % Default constructor for the Cruise class.
-        % Params:
-        %   - hEnd: final height of the climb
-        %   - vClimb: climb airspeed
-        %   - hDotClimb: climb rate
-        %   - vehicle: vehicle class with solved sizing
-        %
+        % Default Constructor Method
         function obj = Climb(hEnd, vClimb, numVals, vehicle)
             obj.hEnd = hEnd;
             obj.vClimb = vClimb;
@@ -37,28 +30,25 @@ To do:
 
         function tbl = run(obj, tab)
         % Discretize over altitude from hStart to hEnd.
-        % Find flight path angle from climb velocity and vertical velocity,
-        % which are both constants as inputs.  Assume thrust, body x
-        % direction, and velocity in the same direction.
 
 
         % General variables
             Sref     = obj.vehicle.Sref;     
             k        = obj.vehicle.k;            
-            Cd_0      = obj.vehicle.Cd_0;
+            Cd_0     = obj.vehicle.Cd_0;
             rho      = obj.vehicle.rho;      
             g        = 9.81;    % Acceleration due to gravity [m/s^2]
             numVals_ = obj.numVals;
             vClimb_    = obj.vClimb;
 
             % Initialize table variables
-            h_End = obj.hEnd;
-            tStart  = tab.Time(end);
-            E_Start  = tab.Energy(end);
-            vAir_NED_Start = tab.Airspeed_NED(end, :);
-            v_NED_Start = tab.Groundspeed(end, :);
+            h_End           = obj.hEnd;
+            tStart          = tab.Time(end);
+            E_Start         = tab.Energy(end);
+            vAir_NED_Start  = tab.Airspeed_NED(end, :);
+            v_NED_Start     = tab.Groundspeed(end, :);
             vWind_NED_Start = tab.Windspeed_NED(end, :);
-            pos_NED_Start = tab.Position_NED(end, :);
+            pos_NED_Start   = tab.Position_NED(end, :);
 
         % Initialize table variables
             t         = tStart*ones(numVals_, 1);
@@ -76,7 +66,7 @@ To do:
             E         = zeros(numVals_,1);
             alpha     = zeros(numVals_,1);
             eulers    = repmat(eulers_Start, numVals_, 1);
-            gamma     = gamma_Set*ones(numVals_,1);  
+            gamma     = zeros(numVals_,1);  
 
             % Preliminary euler setup
             if abs(abs(psi_Start) - 180) < 1
@@ -86,17 +76,17 @@ To do:
             end
 
             % Non-iterative calcs:
-            weight        = mass * g;
-            pos_NED(:, 3) = linspace(pos_NED_Start(3), -h_End, numVals_);
-            d_Alt         = pos_NED(2, 3) - pos_NED(1, 3);
+            weight = mass * g;
+            Z_coords   = linspace(pos_NED_Start(3), -h_End, numVals_);
+            d_Z  = Z_coords(2) - Z_coords(1);
             [thrust_use, power_use] = obj.Propulsion.get_Thrust_Power(obj.T_set, vClimb_);
-            q_use = 0.5 * rho * vClimb_^2;
-            CL_use = weight / (q_use * Sref);
+            q_use     = 0.5 * rho * vClimb_^2;
+            CL_use    = weight / (q_use * Sref);
             alpha_use = obj.vehicle.get_req_alpha(obj, CL_use);
-            CD_use = Cd_0 + k*CL_use;
-            drag = CD_use * Sref * q_use;
-            pSpec = (thrust_use - drag) * vClimb_ / weight;
-            dt = d_Alt / pSpec;
+            CD_use    = Cd_0 + k*CL_use^2;
+            drag      = CD_use * Sref * q_use;
+            pSpec     = (thrust_use - drag) * vClimb_ / weight;
+            dt        = d_Z / -pSpec;
 
         % Tracking
             for i = 1:numVals_
@@ -117,6 +107,7 @@ To do:
                 E(i)          = E_Start + (t(i) - t(1))*power_use;                
                 pos_NED(i, 1) = pos_NED_Start(1) + trapz(t(1:i), v_NED(1:i, 1));
                 pos_NED(i, 2) = pos_NED_Start(2) + trapz(t(1:i), v_NED(1:i, 2));
+                pos_NED(i, 3) = Z_coords(i);
             end
 
         % New structure/table. All vectors in NED
