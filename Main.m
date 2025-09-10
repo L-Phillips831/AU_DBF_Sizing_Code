@@ -189,8 +189,8 @@ function cost = MOG_Solver(banner_length, W_S, P2W, AR, num_pucks)
     % num_laps_3
     score_GM_Norm = 10;
     time_run = 1.5; % seconds
-    time_load_M2 = 0; % fix, f(#ducks/#pucks)
-    time_unload_M2 = 0; % fix, f(#ducks/#pucks)
+    time_load_M2 = 2*ceil(aircraft.num_pucks/4) + ceil(2.5*aircraft.num_ducks/6); % fix
+    time_unload_M2 = 2*ceil(aircraft.num_pucks/4) + ceil(aircraft.num_ducks/4); % fix
     time_load_M3 = 2; % seconds
     score_GM_AU = 4*time_run + time_load_M2 + time_unload_M2 + time_load_M3;
     score_GM = score_GM_Norm/score_GM_AU;
@@ -202,9 +202,9 @@ function cost = MOG_Solver(banner_length, W_S, P2W, AR, num_pucks)
     income_Norm = get_income(60, 20, 10); % 60 ducks, 20 pucks, 10 laps
     cost_Norm = get_cost(10, 60, 20, 1);
     score_M2_Norm = income_Norm - cost_Norm;
-    income_AU = get_income(num_ducks, aircraft.num_pucks, num_laps_2);
+    income_AU = get_income(aircraft.num_ducks, aircraft.num_pucks, num_laps_2);
     EF = aircraft.battery_capacity / 100;
-    cost_AU = get_cost(num_laps_2, aircraft.num_ducks, num_pucks, EF);
+    cost_AU = get_cost(num_laps_2, aircraft.num_ducks, aircraft.num_pucks, EF);
     score_M2_AU = income_AU - cost_AU;
     score_M2 = score_M2_AU/score_M2_Norm;
 
