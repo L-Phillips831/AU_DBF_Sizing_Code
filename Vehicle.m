@@ -329,7 +329,8 @@ classdef Vehicle < handle
 
         function CD = get_banner_drag(obj, V)
             
-            Re = 0.002377 * V * obj.banner_length / 3.737e-7;
+            rho = 1.225;
+            Re = rho * V * obj.banner_length / 1.789e-5;
             Re_crit = 10e4;
 
             CD = 0.108*Re^(-0.2) * min([(1 + 0.8*log(Re/Re_crit)), 6]);
