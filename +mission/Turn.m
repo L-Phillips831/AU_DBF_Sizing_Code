@@ -57,7 +57,7 @@ classdef Turn < mission.Mission_Segment
         end
         
         
-        function tbl = InstantaneousTurn(obj, dPsi, tab)
+        function tbl = InstantaneousTurn(obj, tab)
         % Instantaneous Turn Mission Segment
 
         % Description: Takes heading change and a flight history table as
@@ -70,12 +70,13 @@ classdef Turn < mission.Mission_Segment
         % General variables
             Sref     = obj.vehicle.Sref;                                              
             k        = obj.vehicle.k;                                                  
-            Cd_0      = obj.vehicle.Cd_0;                                                
+            Cd_0     = obj.vehicle.Cd_0;                                                
             rho      = obj.vehicle.rho;  
             g        = 9.81;     % Acceleration due to gravity [m/s^2] 
             numVals_ = obj.numVals;
             T_set_   = obj.T_set;
             Cl_max   = obj.vehicle.Cl_max;
+            dPsi_    = obj.dPsi;
 
         % Instantaneous variables
             lfStruc = obj.vehicle.lfStruc;                                  % Need call, maximum structural load factor
@@ -100,7 +101,7 @@ classdef Turn < mission.Mission_Segment
             q         = zeros(numVals_, 1);
             CL        = zeros(numVals_, 1);
             CD        = zeros(numVals_, 1);
-            mass      = (tab.mass(end));                   
+            mass      = (tab.Mass(end));                   
             power     = zeros(numVals_,1);
             E         = E_Start*ones(numVals_, 1);
             alpha     = zeros(numVals_,1);
@@ -109,7 +110,7 @@ classdef Turn < mission.Mission_Segment
 
 
         % Discretization on heading
-            psi = psi_Start + linspace(0, dPsi, numVals_);
+            psi = psi_Start + linspace(0, dPsi_, numVals_);
 
         % Heading wrap-around -180 to 180
             for i = 1:numVals_
@@ -122,9 +123,9 @@ classdef Turn < mission.Mission_Segment
 
         % Euler angles set
             eulers(:, 3) = psi;
-            if dPsi > 0
+            if dPsi_ > 0
                 eulers(:, 1) = 90; % Bank right to go right
-            elseif dPsi < 0
+            elseif dPsi_ < 0
                 eulers(:, 1) = -90; % Bank left to go left
             end
 
@@ -135,7 +136,7 @@ classdef Turn < mission.Mission_Segment
                 alpha(i)     = 0; % Small angle approx.
                 eulers(i, 2) = alpha(i);
                 if i > 1
-                    v_NED(i, :) = v_NED(i-1, :) + a_NED * dt;
+                    v_NED(i, :) = v_NED(i-1, :) + a_NED' * dt;
                     gamma(i)    = atand(v_NED(i, 3) / sqrt(v_NED(i, 1)^2 + v_NED(i, 2)^2));
                 end
                 BI = Vehicle.get_DCM_BI(eulers(i, 1), eulers(i, 2), eulers(i, 3));
@@ -149,22 +150,22 @@ classdef Turn < mission.Mission_Segment
                 CL(i)          = L/(Sref*q(i));
                 CD(i)          = Cd_0 + k*CL(i)^2;
                 D              = CD(i) * q(i) * Sref;
-                vAir_Body      = BI * vAir_NED(i, :);
+                vAir_Body      = BI * vAir_NED(i, :)';
                 [thrust(i), power(i)] = obj.vehicle.Propulsion.get_Thrust_Power(T_set_, vAir_Body(1));
                 [F_x_Body, F_z_Body]  = Vehicle.reconcile_L_D(L, D, alpha(i));
                 F_x_Body       = thrust(i) + F_x_Body;
                 F_y_Body       = weight * sin(eulers(i, 1));
-                a_Body         = [F_x_Body, F_y_Body, F_z_Body]/mass;
+                a_Body         = [F_x_Body; F_y_Body; F_z_Body]/mass;
                 a_NED          = IB * a_Body;
                 r              = vAero^2 / a_Body(3);
                 omega          = vAero/r;
+                dt = (psi(2)-psi(1))/omega;
                 if i>1
-                    dt = (psi(i)-psi(i-1))/omega;
                     t(i) = t(i-1) + dt;
+                    E(i)         = E_Start + trapz(t(1:i) , power(1:i));
+                    pos_NED(i,1) = pos_NED_Start(1) + trapz(t(1:i) , v_NED(1:i, 1));
+                    pos_NED(i,2) = pos_NED_Start(2) + trapz(t(1:i) , v_NED(1:i, 2));
                 end
-                E(i)         = E_Start + trapz(t(1:i) , power(1:i));
-                pos_NED(i,1) = pos_NED_Start(1) + trapz(t(1:i) , v_NED(1:i, 1));
-                pos_NED(i,2) = pos_NED_Start(2) + trapz(t(1:i) , v_NED(1:i, 2));
                 pos_NED(i,3) = pos_NED_Start(3) - 0.5 * g * (t(i) - t(1))^2;
             end
             
@@ -192,7 +193,7 @@ classdef Turn < mission.Mission_Segment
 
 
 
-        function tbl = SustainedTurn(obj, dPsi, tab)
+        function tbl = SustainedTurn(obj, tab)
             % Sustained Turn Mission Segment
 
             % Description: Takes heading change and the aircraft object.
@@ -215,6 +216,7 @@ classdef Turn < mission.Mission_Segment
             k_Safe_  = 1.5;
             numVals_ = obj.numVals;
             Cl_max   = obj.vehicle.Cl_max;
+            dPsi_    = obj.dPsi;
 
         % Pull start of segment conditions
             vAir_NED_Start  = tab.Airspeed_NED(end, :);
@@ -236,16 +238,15 @@ classdef Turn < mission.Mission_Segment
             q         = zeros(numVals_, 1);
             CL        = zeros(numVals_, 1);
             CD        = zeros(numVals_, 1);
-            mass      = (tab.mass(end));                   
+            mass      = (tab.Mass(end));                   
             power     = zeros(numVals_,1);
             E         = E_Start*ones(numVals_, 1);
             alpha     = zeros(numVals_,1);
             eulers    = zeros(numVals_,3);
             gamma     = zeros(numVals_,1);                      
 
-
             % Discretization on heading
-            psi = psi_Start + linspace(0, dPsi, numVals_);
+            psi = psi_Start + linspace(0, dPsi_, numVals_);
 
             % Heading wrap-around -180 to 180
             for i = 1:numVals_
@@ -280,9 +281,9 @@ classdef Turn < mission.Mission_Segment
                 power(i)     = power_Val;
                 alpha(i)     = 0;
                 eulers(i, 2) = alpha(i); % Assumed 0, small angle approx.
-                if dPsi > 0
+                if dPsi_ > 0
                     eulers(i, 1) = acosd(1/lf_Use); % Bank right to go right
-                elseif dPsi < 0
+                elseif dPsi_ < 0
                     eulers(i, 1) = -acosd(1/lf_Use); % Bank left to go left
                 end
                 if i > 1
@@ -299,10 +300,10 @@ classdef Turn < mission.Mission_Segment
                 if i>1
                     dt = (psi(i)-psi(i-1))/omega;
                     t(i) = t(i-1)+ dt;
+                    E(i)         = E_Start + (t(i) - t(1)) * power(i);
+                    pos_NED(i,1) = pos_NED_Start(1) + trapz(t(1:i) , v_NED(1:i, 1));
+                    pos_NED(i,2) = pos_NED_Start(2) + trapz(t(1:i) , v_NED(1:i, 2));
                 end
-                E(i)         = E_Start + (t(i) - t(1)) * power(i);
-                pos_NED(i,1) = pos_NED_Start(1) + trapz(t(1:i) , v_NED(1:i, 1));
-                pos_NED(i,2) = pos_NED_Start(2) + trapz(t(1:i) , v_NED(1:i, 2));
                 pos_NED(i,3) = pos_NED_Start(3);
             end
             
