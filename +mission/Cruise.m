@@ -36,8 +36,6 @@ classdef Cruise < mission.Mission_Segment
             rho      = obj.vehicle.rho;      
             g        = 9.81;    % Acceleration due to gravity [m/s^2]
             numVals_ = obj.numVals;
-            Cl_alpha = obj.vehicle.Cl_alpha;
-            Cl_0     = obj.vehicle.Cl_0;
 
         % Pull start of segment conditions
             vAir_NED_Start  = tab.Airspeed_NED(end, :);
@@ -75,7 +73,7 @@ classdef Cruise < mission.Mission_Segment
                 direc_Scalar = 1;
             end
             x_NED_End     = pos_NED_Start(1) + delta_NED;
-            x_NED         = linspace(pos_NED_Start(1), x_NED_End, numVals_);     % Discretization Base
+            x_NED         = linspace(pos_NED_Start(1), x_NED_End, numVals_);% Discretization Base
             pos_NED(:, 1) = x_NED;
 
             weight = mass * g;
@@ -83,8 +81,8 @@ classdef Cruise < mission.Mission_Segment
         for i = 1:numVals_
             vAir_NED(i, :)        = v_NED(i, :) - vWind_NED(i, :);
             q(i)                  = 0.5 * rho * vAir_NED(i, 1)^2;
-            alpha(i)              = ((weight/(q(i)*Sref)) - Cl_0) / Cl_alpha;
-            dt                    = abs(pos_NED(i, 1)) / v_NED(i, 1);
+            CL_guess              = weight/(q(i)*Sref);
+            alpha(i)              = obj.vehicle.get_req_alpha(obj, CL_guess);
             vAir_x_Body           = cosd(alpha(i)) * vAir_NED(i, 1);
             [thrust(i), power(i)] = obj.vehicle.Propulsion.get_Thrust_Power(obj.T_set, vAir_x_Body);
             L                     = weight - sind(alpha(i)) * thrust(i);
@@ -94,11 +92,14 @@ classdef Cruise < mission.Mission_Segment
             D                     = CD(i) * q(i) * Sref;
             F_x_NED               = direc_Scalar * (cosd(alpha(i)) * thrust(i) - D);
             a_NED                 = [F_x_NED, 0, 0]/mass;
-            if i < numVals_
+            dt = abs(pos_NED(2, 1)-pos_NED(1, 1)) / v_NED(i, 1);
+            if i > 1
                 t(i)       = t(i-1) + dt;
-                v_NED(i+1) = v_NED(i) + a_NED*dt;
             end
-            E(i) = E_Start + trapz(t(1:i) , power(1:i));
+            if i < numVals_
+                v_NED(i+1, :) = v_NED(i, :) + a_NED*dt;
+                E(i) = E_Start + trapz(t(1:i) , power(1:i));
+            end
         end
 
         % New structure/table. All vectors in NED
