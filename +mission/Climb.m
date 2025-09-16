@@ -46,9 +46,10 @@ To do:
             tStart          = tab.Time(end);
             E_Start         = tab.Energy(end);
             vAir_NED_Start  = tab.Airspeed_NED(end, :);
-            v_NED_Start     = tab.Groundspeed(end, :);
+            v_NED_Start     = tab.Groundspeed_NED(end, :);
             vWind_NED_Start = tab.Windspeed_NED(end, :);
             pos_NED_Start   = tab.Position_NED(end, :);
+            eulers_Start    = tab.Eulers(end,:);
 
         % Initialize table variables
             t         = tStart*ones(numVals_, 1);
@@ -61,7 +62,7 @@ To do:
             q         = zeros(numVals_, 1);
             CL        = zeros(numVals_, 1);
             CD        = zeros(numVals_, 1);
-            mass      = (tab.mass(end));                   
+            mass      = (tab.Mass(end));                   
             power     = zeros(numVals_,1);
             E         = zeros(numVals_,1);
             alpha     = zeros(numVals_,1);
@@ -69,7 +70,7 @@ To do:
             gamma     = zeros(numVals_,1);  
 
             % Preliminary euler setup
-            if abs(abs(psi_Start) - 180) < 1
+            if abs(abs(eulers_Start(3)) - 180) < 1
                 direc_Scalar = -1;
             else
                 direc_Scalar = 1;
@@ -104,10 +105,12 @@ To do:
                 if i>1
                 t(i) = t(i-1) + dt;
                 end
-                E(i)          = E_Start + (t(i) - t(1))*power_use;                
+                E(i)          = E_Start + (t(i) - t(1))*power_use;  
+                if i>1
                 pos_NED(i, 1) = pos_NED_Start(1) + trapz(t(1:i), v_NED(1:i, 1));
                 pos_NED(i, 2) = pos_NED_Start(2) + trapz(t(1:i), v_NED(1:i, 2));
                 pos_NED(i, 3) = Z_coords(i);
+                end
             end
 
         % New structure/table. All vectors in NED
