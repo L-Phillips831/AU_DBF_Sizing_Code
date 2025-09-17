@@ -158,8 +158,8 @@ classdef Turn < mission.Mission_Segment
                 a_Body         = [F_x_Body; F_y_Body; F_z_Body]/mass;
                 a_NED          = IB * a_Body;
                 r              = vAero^2 / a_Body(3);
-                omega          = vAero/r;
-                dt = (psi(2)-psi(1))/omega;
+                omega          = 180/pi*(vAero/r);
+                dt = abs((psi(2)-psi(1))/omega);
                 if i>1
                     t(i) = t(i-1) + dt;
                     E(i)         = E_Start + trapz(t(1:i) , power(1:i));
@@ -232,7 +232,7 @@ classdef Turn < mission.Mission_Segment
             vAir_NED  = repmat(vAir_NED_Start, numVals_, 1);
             v_NED     = repmat(v_NED_Start, numVals_, 1);
             vWind_NED = repmat(vWind_NED_Start, numVals_, 1);
-            pos_NED   = pos_NED_Start*ones(numVals_, 3);
+            pos_NED   = repmat(pos_NED_Start, numVals_, 1);
             throttle  = obj.T_set*ones(numVals_, 1);
             thrust    = zeros(numVals_, 1);
             q         = zeros(numVals_, 1);
@@ -287,18 +287,18 @@ classdef Turn < mission.Mission_Segment
                     eulers(i, 1) = -acosd(1/lf_Use); % Bank left to go left
                 end
                 if i > 1
+                    dt = abs((eulers(2, 3)-eulers(1, 3))/omega);
                     v_NED(i, :) = v_NED(i-1, :) + a_NED * dt;
                 end
                 BI = Vehicle.get_DCM_BI(eulers(i, 1), eulers(i, 2), eulers(i, 3));
                 IB = BI';
                 vAir_NED(i, :) = v_NED(i, :);
                 a_Body = [0, 0, -g*lf_Use];
-                a_NED  = IB*a_Body;
-                a_NED  = a_NED + [0, 0, g]; 
-                aCentr = sqrt(lf_Use^2 - 1);
-                omega  = aCentr/v_Calc;                        
+                a_NED  = IB*a_Body';
+                a_NED  = a_NED' + [0, 0, g]; 
+                aCentr = g*sqrt(lf_Use^2 - 1);
+                omega  = 180/pi*aCentr/v_Calc;                     
                 if i>1
-                    dt = (psi(i)-psi(i-1))/omega;
                     t(i) = t(i-1)+ dt;
                     E(i)         = E_Start + (t(i) - t(1)) * power(i);
                     pos_NED(i,1) = pos_NED_Start(1) + trapz(t(1:i) , v_NED(1:i, 1));
