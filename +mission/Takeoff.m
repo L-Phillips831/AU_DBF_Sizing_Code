@@ -30,13 +30,13 @@ classdef Takeoff < mission.Mission_Segment
             T_set           = obj.T_set;
             grFriction      = 0.05;
             k_TO            = 1.3;
+            n_Trans         = 1.3;
             g               = 9.81; 
-            mass            = obj.mass;
+            mass            = obj.Mass;
             numVals_        = obj.numVals;
             numParts        = 2; % for a taildragger with no rotation
-            tTransition     = 2;
             weight          = mass * g;
-            vLOF            = sqrt(2*weight / (Cl_max * Sref * rho))/k_TO;
+            vLOF            = sqrt(2*weight / (Cl_max * Sref * rho))*k_TO;
             aoaSet          = obj.vehicle.get_req_alpha(obj, Cl_max);   
 
         % Initialize table variables
@@ -57,12 +57,12 @@ classdef Takeoff < mission.Mission_Segment
             t         = zeros(numParts*numVals_, 1);
 
         % Ground Run
-            v_Air_Static            = 0 - vWind_NED_Start;
-            vAir_NED_x              = linspace(v_Air_Static, vRot, numVals_);
+            v_Air_Static            = [0, 0, 0] - vWind_NED_Start;
+            vAir_NED_x              = linspace(v_Air_Static(1), vLOF, numVals_);
             vAir_NED(1:numVals_, 1) = vAir_NED_x;
-            v_NED(1:numVals_, :)    = vAir_NED + vWind_NED;
+            v_NED(1:numVals_, :)    = vAir_NED(1:numVals_, :) + vWind_NED_Start;
             alpha(1:numVals_)       = aoaSet;
-            eulers(1:numVals_,:)    = [0, aoaSet, 0];
+            eulers(1:numVals_,:)    = repmat([0, aoaSet, 0], numVals_, 1);
             q(1:numVals_)           = 0.5 * rho * vAir_NED_x.^2;
             CL(1:numVals_)          = Cl_max;
             CD(1:numVals_)          = Cd_0 + k*CL(1:numVals_).^2;
@@ -76,17 +76,17 @@ classdef Takeoff < mission.Mission_Segment
                 BI        = Vehicle.get_DCM_BI(eulers(i, 1), eulers(i, 2), eulers(i, 3));
                 vAero     = sqrt(sum(vAir_NED(i, :).^2));
                 q(i)      = 0.5 * rho * vAero^2;
-                vAir_Body = BI*vAir_NED;
+                vAir_Body = BI*vAir_NED';
                 [thrust(i), power(i)] = obj.vehicle.Propulsion.get_Thrust_Power(obj.T_set, vAir_Body(1));
                 lift  = CL(i)*Sref*q(i);
                 drag  = CD(i)*Sref*q(i) + grFriction * (weight - lift); % Make sure drag is not >=
-                a_NED = [thrust - drag, 0, 0]/mass;
+                a_NED = [thrust(i) - drag, 0, 0]/mass;
                 dt    = dv / a_NED(1);
                 if i >1
                     t(i) = t(i-1) + dt;
+                    pos_NED(i, 1) = trapz(t(1:i), v_NED(1:i, 1));
+                    E(i) = trapz(t(1:i), power(1:i));
                 end
-                pos_NED(i, 1) = trapz(t(1:i), v_NED(1:i, 1));
-                E(i) = trapz(t(1:i), power(1:i));
             end
 
 %{
@@ -113,42 +113,54 @@ classdef Takeoff < mission.Mission_Segment
 
         % Climb Transition
             % Find best vClimb and gamma_Air
-            v_opts = linspace(0, 100, numVals_);
+            v_opts = linspace(0, 50, numVals_);
             hDots = zeros(numVals_, 1);
+            CLs = zeros(numVals_, 1);
             for i = 1:numVals_
-                [t,~]    = obj.vehicle.Propulsion.get_Thrust_Power(obj.T_set, v_opts(i));
-                Cl       = weight / (Sref * 0.5 * rho * v_opts(i)^2);
-                Cd       = Cd_0 + k*Cl^2;
+                [t_Pos,~]    = obj.vehicle.Propulsion.get_Thrust_Power(obj.T_set, v_opts(i));
+                CLs(i)       = weight / (Sref * 0.5 * rho * v_opts(i)^2);
+                Cd       = Cd_0 + k*CLs(i)^2;
                 d        = Cd * Sref * 0.5 * rho * v_opts(i)^2;
-                hDots(i) = v_opts(i) * (t-d) / weight;
+                hDots(i) = v_opts(i) * (t_Pos-d) / weight;
             end
             [hDot_climb, idx] = max(hDots);
             vClimb            = v_opts(idx);
             gamma_Air_Climb   = asind(hDot_climb / vClimb);
+            CL_climb          = CLs(idx);
+            alpha_climb       = obj.vehicle.get_req_alpha(obj, CL_climb);
             
             % Discretizations:
             vAir_total = linspace(vLOF, vClimb, numVals_);
             gamma_Air  = linspace(0, gamma_Air_Climb, numVals_);
-            dt         = tTransition / (numVals_ - 1);
+            alpha((numVals_ + 1):(2*numVals_)) = linspace(alpha(numVals_), alpha_climb, numVals_);
+            CL((numVals_ + 1):(2*numVals_)) = linspace(CL(numVals_), CL_climb, numVals_);
+            R = (vLOF + vClimb)^2 / (4*g*(n_Trans-1));
 
             for i = (numVals_ + 1):(2*numVals_)
                 if (i-numVals_) > 1
                     t(i) = t(i-1) + dt;
+                else
+                    t(i) = t(i-1);
                 end
+                gammaDot = 180/pi*vAir_total(i-numVals_)/R;
+                dt = (gamma_Air(2) - gamma_Air(1))/gammaDot;
                 q(i)     = 0.5 * rho * vAir_total(i-numVals_)^2;
-                CL(i)    = weight / (Sref * q(i));
-                alpha(i) = obj.vehicle.get_req_alpha(obj, CL(i));
                 CD(i)    = Cd_0 + k*CL(i)^2;
                 [thrust(i), power(i)] = obj.Propulsion.get_Thrust(obj.T_set, vAir_total(i-numVals_));
-                vAir_NED(i, 3) = - hDot_climb;
+                pSpec = vAir_total(i-numVals_)*(thrust(i)-CD(i)*Sref*q(i))/weight; % Added this guy
+                dvTotal = vAir_total(2) - vAir_total(1);
+                pSpec_Z = pSpec - vAir_total(i-numVals_)/g*dvTotal/dt;
+                vAir_NED(i, 3) = - pSpec_Z;
                 vAir_NED(i, 1) = vAir_total(i-numVals_)*cosd(gamma_Air(i-numVals_));
                 v_NED(i, :)    = vWind_NED(i, :) + vAir_NED(i, :);
                 gamma(i)       = atand(- v_NED(i, 3) / v_NED(i, 1));
                 eulers(i, :)   = [0, gamma(i) + alpha(i), 0];
-                pos_NED(i, 1)  = trapz(t(1:i), v_NED(1:i, 1));
-                pos_NED(i, 2)  = trapz(t(1:i), v_NED(1:i, 2));
-                pos_NED(i, 3)  = trapz(t(1:i), v_NED(1:i, 3));
-                E(i)           = trapz(t(1:i), power(1:i));
+                if (i-numVals_) > 1
+                    pos_NED(i, 1)  = trapz(t(1:i), v_NED(1:i, 1));
+                    pos_NED(i, 2)  = trapz(t(1:i), v_NED(1:i, 2));
+                    pos_NED(i, 3)  = trapz(t(1:i), v_NED(1:i, 3));
+                    E(i)           = trapz(t(1:i), power(1:i));
+                end
             end
 
         % New structure/table. All vectors in NED
