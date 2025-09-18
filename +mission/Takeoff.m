@@ -30,7 +30,6 @@ classdef Takeoff < mission.Mission_Segment
             T_set           = obj.T_set;
             grFriction      = 0.05;
             k_TO            = 1.3;
-            n_Trans         = 1.3;
             g               = 9.81; 
             mass            = obj.Mass;
             numVals_        = obj.numVals;
@@ -134,6 +133,7 @@ classdef Takeoff < mission.Mission_Segment
             gamma_Air  = linspace(0, gamma_Air_Climb, numVals_);
             alpha((numVals_ + 1):(2*numVals_)) = linspace(alpha(numVals_), alpha_climb, numVals_);
             CL((numVals_ + 1):(2*numVals_)) = linspace(CL(numVals_), CL_climb, numVals_);
+            n_Trans         = 1.2;
             R = (vLOF + vClimb)^2 / (4*g*(n_Trans-1));
 
             for i = (numVals_ + 1):(2*numVals_)
