@@ -10,30 +10,33 @@ classdef Mission_Builder < handle  % stupid in-place modification requirement
 
     methods (Access = public)
 
-        % Default Constructor for the mission class.
-        % Params:
-        %   - n_laps: positive integer that is the total number of laps
-        %             flown in the respective mission.
-        %   - vehicle: vehicle object containing relevant informataion of
-        %              the current aircraft sizing and geometry.
-        %
+      
         function obj = Mission_Builder(n_laps_, vehicle_, num_timesteps_)
+            % Default Constructor for the mission class.
+            % Params:
+            %   - n_laps: positive integer that is the total number of laps
+            %             flown in the respective mission.
+            %   - vehicle: vehicle object containing relevant informataion of
+            %              the current aircraft sizing and geometry.
+            %
+
             obj.n_laps = n_laps_;
             obj.vehicle = vehicle_;
             obj.num_timesteps = num_timesteps_;
 
         end
 
-        % Method for simulating the current mission.
-        % Params:
-        %   - tab (optional).
-        % Returns:
-        %   - t_total: the total time it took to complete the mission. Used
-        %              in scoring analysis.
-        %   - E_total: the total estimated energy usage during the mission.
-        %              Used to verify geometry convergence
-        %
+        
         function [t_total, E_total, tab] = run(obj, varargin)
+            % Method for simulating the current mission.
+            % Params:
+            %   - tab (optional).
+            % Returns:
+            %   - t_total: the total time it took to complete the mission. Used
+            %              in scoring analysis.
+            %   - E_total: the total estimated energy usage during the mission.
+            %              Used to verify geometry convergence
+            %
 
             flight_keys = ["Time","E","Power","Distance","V","Acceleration","Altitude","hDot", ...
                "Mass","Thrust","q","CL","CD","Lift","Drag","LD"];
@@ -57,29 +60,37 @@ classdef Mission_Builder < handle  % stupid in-place modification requirement
         end
 
         function obj = clear(obj)
-
+            % Method to clear the mission segment list. Used for repeated
+            % section analaysis to prevent re-solving previous segments
+            % Params:
+            %   - current mission_builder object
+            % Returns:
+            %   - the updated object
+            %
+            
             obj.segments = [];
         end
 
 
-        % Method for adding takeoff mission segment
-        % Params:
-        %   - 
-        %
+        
         function obj = add_takeoff(obj)
+            % Method for adding takeoff mission segment
+            % Params:
+            %   - 
+            %
 
         end
 
 
-        % Method for adding climb mission segment
-        % Params:
-        %   - hEnd: final height after climb [m]
-        %   - vClimb: climb airspeed [m/s]
-        %   - hDotClimb: climb rate [m/s]
-        % Returns:
-        %   - updated Mission_Builder object
-        %
         function obj = add_climb(obj, hEnd, vClimb, hDotClimb)
+            % Method for adding climb mission segment
+            % Params:
+            %   - hEnd: final height after climb [m]
+            %   - vClimb: climb airspeed [m/s]
+            %   - hDotClimb: climb rate [m/s]
+            % Returns:
+            %   - updated Mission_Builder object
+            %
 
             climb_segment = mission.Climb(hEnd, vClimb, hDotClimb, obj.num_timesteps, obj.vehicle);
             obj.segments(end+1) = climb_segment;
@@ -87,28 +98,30 @@ classdef Mission_Builder < handle  % stupid in-place modification requirement
         end
 
 
-        % Method for adding cruise mission segment
-        % Params:
-        %   - dDelta: distance traveled during the segment [m]
-        %   - T_set: throttle setting for the mission [-]
-        % Returns:
-        %   - updated Mission_Builder object
-        %
+        
         function obj = add_cruise(obj, dDelta, T_set)
+            % Method for adding cruise mission segment
+            % Params:
+            %   - dDelta: distance traveled during the segment [m]
+            %   - T_set: throttle setting for the mission [-]
+            % Returns:
+            %   - updated Mission_Builder object
+            %
 
             cruise_segment = mission.Cruise(dDelta, T_set, obj.num_timesteps, obj.vehicle);
             obj.segments(end+1) = cruise_segment;
 
         end
 
-        % Method for adding turn mission segment
-        % Params:
-        %   - dPhi: heading change [deg]
-        %   - option: specification of instantaneous or sustained turn
-        % Returns:
-        %   - updated Mission_Builder Object
-        %
+
         function obj = add_turn(obj, dPhi, option)
+            % Method for adding turn mission segment
+            % Params:
+            %   - dPhi: heading change [deg]
+            %   - option: specification of instantaneous or sustained turn
+            % Returns:
+            %   - updated Mission_Builder Object
+            %
 
             turn_segment = mission.Turn(dPhi, obj.num_timesteps, obj.vehicle, option);
             obj.segments(end+1) = turn_segment;

@@ -8,7 +8,7 @@ classdef Vehicle < handle
         name string                                     % Vehicle Name
         components geom.Component                       % struct of components
 
-        prop powerplant.Propulsion                % Propulsion system
+        prop powerplant.Propulsion                      % Propulsion system
         battery_capacity (1,1) double
 
         banner_length (1,1) double                      % Banner length [m]
@@ -75,19 +75,21 @@ classdef Vehicle < handle
         end
         
 
-        % Method for adding the main wing to the vehicle component list.
-        % Params: 
-        %   - x_loc_q4_: double location of quarter chord relative to nose
-        %   - z_loc_: double location of wing centerline relative to
-        %             fuselage centerline
-        %   - AR_: double wing aspect ratio
-        %   - taper_: double wing taper ratio. Defined as c_tip / c_root
-        %   - sweep_: double angle of constant wing sweep
-        %   - airfoil_: string name of airfoil 
-        % Returns:
-        %   - updated vehicle object with component addition
-        %
+        
         function obj = add_wing(obj, x_loc_q4_, z_loc_, AR_, taper_, sweep_, airfoil_)
+            % Method for adding the main wing to the vehicle component list.
+            % Params: 
+            %   - x_loc_q4_: double location of quarter chord relative to nose
+            %   - z_loc_: double location of wing centerline relative to
+            %             fuselage centerline
+            %   - AR_: double wing aspect ratio
+            %   - taper_: double wing taper ratio. Defined as c_tip / c_root
+            %   - sweep_: double angle of constant wing sweep
+            %   - airfoil_: string name of airfoil 
+            % Returns:
+            %   - updated vehicle object with component addition
+            %
+
             wing_area = obj.MTOW / obj.W_S;
             wing_span = sqrt(AR_ * wing_area);
             if wing_span > 5.0
@@ -115,15 +117,17 @@ classdef Vehicle < handle
         end
 
 
-        % Method for adding HT to vehicle component list. Assumed
-        % rectangular body
-        % Params:
-        %   - AR_: double aspect ratio
-        %   - airfoil_: string airfoil name
-        % Returns:
-        %   - updated vehicle object with component addition
-        %
+        
         function obj = add_HT(obj, AR_, airfoil_)
+            % Method for adding HT to vehicle component list. Assumed
+            % rectangular body
+            % Params:
+            %   - AR_: double aspect ratio
+            %   - airfoil_: string airfoil name
+            % Returns:
+            %   - updated vehicle object with component addition
+            %
+
             L_HT_ = obj.aircraft_length * 0.6;  % Raymer assumption of L_HT
             obj.L_HT = L_HT_;
             S_HT = obj.S_ref * obj.c_ref * obj.HT_coeff / L_HT_;
@@ -142,16 +146,18 @@ classdef Vehicle < handle
         end
 
 
-        % Method for adding VT to vehicle component list.
-        % Params:
-        %   - AR_: double aspect ratio
-        %   - taper_: double taper ratio
-        %   - y_loc_: double y location relative to body x-z plane
-        %   - airfoil_: string airfoil name
-        % Returns:
-        %   -  updated vehicle object with added component
-        %
+        
         function obj = add_VT(obj, AR_, taper_, y_loc_, airfoil_)
+            % Method for adding VT to vehicle component list.
+            % Params:
+            %   - AR_: double aspect ratio
+            %   - taper_: double taper ratio
+            %   - y_loc_: double y location relative to body x-z plane
+            %   - airfoil_: string airfoil name
+            % Returns:
+            %   -  updated vehicle object with added component
+            %
+
             L_VT = obj.aircraft_length * 0.6;   % Let L_VT = L_HT for now
             S_VT = obj.S_ref * obj.b_ref * obj.VT_coeff / L_VT;
             span = sqrt(AR_ * S_VT);
@@ -169,21 +175,23 @@ classdef Vehicle < handle
         end
 
 
-        % Method for adding a fuselage to the component list.
-        % Params:
-        %   - length: double fuselage length
-        %   - diameter: double fuselage diameter
-        % Returns:
-        %   - updated vehicle object with added component
-        %
+        
         function obj = add_fuselage(obj)
+            % Method for adding a fuselage to the component list.
+            % Params:
+            %   - length: double fuselage length
+            %   - diameter: double fuselage diameter
+            % Returns:
+            %   - updated vehicle object with added component
+            %
+
             duck_length = 2.5 * 0.00254;
             puck_thickness = 1 * 0.00254;
 
             diameter = 4.75 * 0.00254; % [in -> m]
 
             elec_length = 9 * 0.00254;
-            length = elec_length + (obj.num_ducks / 2 * duck_length) + obj.num_pucks*puck_thickness
+            length = elec_length + (obj.num_ducks / 2 * duck_length) + obj.num_pucks*puck_thickness;
 
             fuselage = geom.Fuselage(length, diameter, "Fuselage");
 
@@ -215,15 +223,16 @@ classdef Vehicle < handle
         
 
 
-        % Method to complete analysis of the entire aircraft. Serves as a
-        % wrapper function for avl related methods and component based 
-        % weight buildup.
-        % Params:
-        %   - none
-        % Returns:
-        %   - updated vehicle object
-        %
+        
         function obj = analyze_airframe(obj)
+            % Method to complete analysis of the entire aircraft. Serves as a
+            % wrapper function for avl related methods and component based 
+            % weight buildup.
+            % Params:
+            %   - none
+            % Returns:
+            %   - updated vehicle object
+            %
 
             obj.get_weights();
 
@@ -248,24 +257,27 @@ classdef Vehicle < handle
             
         end
 
-        % Method to get the alpha required to meet the specified lift
-        % coefficient.
-        %
+        
         function alpha = get_req_alpha(obj, CL_req_)
+            % Method to get the alpha required to meet the specified lift
+            % coefficient.
+            %
 
             alpha = (CL_req_ - obj.Cl_0) / obj.Cl_alpha;
         end
 
 
-        % Method to get the drag induced by the required lift coefficient 
-        %
+        
         function CD = get_CD(obj, CL_req_)
+            % Method to get the drag induced by the required lift coefficient 
+            %
 
             CD = obj.CD_0 + obj.K1 * CL_req_ + obj.K2 * CL_req_^2;
 
         end
 
         function obj = resize_geom(obj, new_E)
+
             % Update new battery size
             obj.prop.battery.energyCapacity = new_E;
             obj.battery_capacity = new_E;
@@ -391,15 +403,16 @@ classdef Vehicle < handle
         end
 
 
-        % Method to generate the complete geom input file for AVL analysis.
-        % Loops through each user added component and adds its
-        % corresponding surface into the file.
-        % Params:
-        %   - current object
-        % Returns:
-        %   - none
-        %
+        
         function generate_geom_file(obj)
+            % Method to generate the complete geom input file for AVL analysis.
+            % Loops through each user added component and adds its
+            % corresponding surface into the file.
+            % Params:
+            %   - current object
+            % Returns:
+            %   - none
+            %
 
             if exist(obj.geom_file, 'file')
                 delete(obj.geom_file)
@@ -427,15 +440,15 @@ classdef Vehicle < handle
         end
 
 
-        % Method to generate case file for running alpha sweep in AVL.
-        % Params:
-        %   - current object
-        %   - alpha_range: Double array of aoa values
-        % Returns:
-        %   - the number of cases generated
-        %
+        
         function num_cases = generate_case_file(obj, alpha_range)
-
+            % Method to generate case file for running alpha sweep in AVL.
+            % Params:
+            %   - current object
+            %   - alpha_range: Double array of aoa values
+            % Returns:
+            %   - the number of cases generated
+            %
     
             if exist(obj.case_file, 'file')
                 delete(obj.case_file)
@@ -470,16 +483,16 @@ classdef Vehicle < handle
 
         end
 
-        % Method to generate the keystroke commands to be fed to avl for
-        % running all test cases and saving to separate files.
-        % Params:
-        %   - the current object
-        %   - num_cases: Double number of cases to be ran
-        % Returns:
-        %   - saved_files: str array of filepaths containing solved data
-        %
+        
         function saved_files = generate_cmd_file(obj, num_cases)
-            
+           % Method to generate the keystroke commands to be fed to avl for
+            % running all test cases and saving to separate files.
+            % Params:
+            %   - the current object
+            %   - num_cases: Double number of cases to be ran
+            % Returns:
+            %   - saved_files: str array of filepaths containing solved data
+            % 
     
             if exist(obj.cmd_file, 'file')
                 delete(obj.cmd_file)
@@ -522,14 +535,15 @@ classdef Vehicle < handle
 
 
 
-        % Method for parsing avl solved data and updating object properties 
-        % with solved aero data.
-        % Params:
-        %   - saved_files: str array of filepaths to saved files
-        % Returns:
-        %   - Updated object with aero data
-        %
+        
         function obj = parse_avl(obj, saved_files)
+            % Method for parsing avl solved data and updating object properties 
+            % with solved aero data.
+            % Params:
+            %   - saved_files: str array of filepaths to saved files
+            % Returns:
+            %   - Updated object with aero data
+            %
 
             alpha_arr = zeros(numel(saved_files), 1);
             CL_arr    = zeros(numel(saved_files), 1);
@@ -555,19 +569,19 @@ classdef Vehicle < handle
             end
 
         
-        [alpha_arr, sort_idx] = sort(alpha_arr);
-        CL_arr = CL_arr(sort_idx); obj.Cl_0 = CL_arr(alpha_arr == 0); obj.Cl_max = max(CL_arr);
-        Cm_arr = Cm_arr(sort_idx);
-        CD_arr = CD_arr(sort_idx);
+            [alpha_arr, sort_idx] = sort(alpha_arr);
+            CL_arr = CL_arr(sort_idx); obj.Cl_0 = CL_arr(alpha_arr == 0); obj.Cl_max = max(CL_arr);
+            Cm_arr = Cm_arr(sort_idx);
+            CD_arr = CD_arr(sort_idx);
 
-        alpha_arr = alpha_arr .* pi / 180;
-        Cl_fit = polyfit(alpha_arr, CL_arr, 1);
-        obj.Cl_alpha = Cl_fit(1);
-        CM_fit = polyfit(alpha_arr, Cm_arr, 1); obj.CM_alpha = CM_fit(1);
-        CD_fit = polyfit(CL_arr, CD_arr, 2); 
-        obj.K2 = CD_fit(1); obj.K1 = CD_fit(2); 
+            alpha_arr = alpha_arr .* pi / 180;
+            Cl_fit = polyfit(alpha_arr, CL_arr, 1);
+            obj.Cl_alpha = Cl_fit(1);
+            CM_fit = polyfit(alpha_arr, Cm_arr, 1); obj.CM_alpha = CM_fit(1);
+            CD_fit = polyfit(CL_arr, CD_arr, 2); 
+            obj.K2 = CD_fit(1); obj.K1 = CD_fit(2); 
 
-        obj.SM = -obj.CM_alpha / obj.Cl_alpha;
+            obj.SM = -obj.CM_alpha / obj.Cl_alpha;
         
         end
 
@@ -583,10 +597,11 @@ classdef Vehicle < handle
         end
 
 
-        % Method to obtain the DCM from Inertial to Body for a given set of
-        % Euler angles.
-        %
+        
         function BI = get_DCM_BI(ph, th, ps)
+            % Method to obtain the DCM from Inertial to Body for a given set of
+            % Euler angles.
+            %
 
             BI = [
                   cosd(th)*cosd(ps)                                 cosd(th)*sin(ps)                                    -sind(th)
@@ -596,10 +611,11 @@ classdef Vehicle < handle
 
         end
 
-        % Method to reconcile the wind frame L and D into the corresponding
-        % body forces. Assumes no sideslip.
-        %
+        
         function [Fx_b, Fz_b] = reconcile_L_D(L, D, alpha)
+            % Method to reconcile the wind frame L and D into the corresponding
+            % body forces. Assumes no sideslip.
+            %
 
            Fx_b = +L*sind(alpha) - D*cosd(alpha);
            Fz_b = -L*cosd(alpha) - D*sind(alpha);
