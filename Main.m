@@ -59,10 +59,11 @@ function cost = MOG_Solver(banner_length, W_S, AR, num_pucks)
     % Add Propulsion System
     bat_cells = 6;
     bat_Wh = 100;
-    motor_kv = 220;
-    prop_pitch = 4;
-    prop_diam = 10;
-    aircraft.add_propulsion(bat_cells, bat_Wh, motor_kv, prop_pitch, prop_diam);
+    motor_kv = 710;
+    motor_max_current = 68;
+    prop_pitch = 8.5;
+    prop_diam = 14;
+    aircraft.add_propulsion(bat_cells, bat_Wh, motor_kv, motor_max_current, prop_pitch, prop_diam);
 
     aircraft.analyze_airframe()
     aircraft.get_banner_drag(100 * 0.3048)

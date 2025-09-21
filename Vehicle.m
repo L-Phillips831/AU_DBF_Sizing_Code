@@ -203,7 +203,7 @@ classdef Vehicle < handle
         end
 
 
-        function obj = add_propulsion(obj, bat_cells, bat_Wh, motor_kv, prop_pitch, prop_diam)
+        function obj = add_propulsion(obj, bat_cells, bat_Wh, motor_kv, motor_max_current, prop_pitch, prop_diam)
             V_per_cell = 3.7;
             V_bat = V_per_cell * bat_cells;
             capacity = bat_Wh / V_bat * 1000;
@@ -211,7 +211,7 @@ classdef Vehicle < handle
             
             bat_ = powerplant.battery(capacity, bat_cells, CRating, "LiPo");
             esc_ = powerplant.esc(100, 100);
-            motor_ = powerplant.motor(motor_kv,100,0.1);
+            motor_ = powerplant.motor(motor_kv,motor_max_current,0.1);
 
             data_file = sprintf("+powerplant//Propeller Data Files//PER3_%.0fx%.0f.dat", prop_diam, prop_pitch);
             propeller_ = powerplant.propeller(prop_pitch, prop_diam, data_file);
