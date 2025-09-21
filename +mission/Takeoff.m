@@ -169,6 +169,11 @@ classdef Takeoff < mission.Mission_Segment
                     pos_NED(i, 2)  = trapz(t(1:i), v_NED(1:i, 2));
                     pos_NED(i, 3)  = trapz(t(1:i), v_NED(1:i, 3));
                     E(i)           = trapz(t(1:i), power(1:i));
+                else
+                    pos_NED(i, 1)  = pos_NED(i-1, 1);
+                    pos_NED(i, 2)  = pos_NED(i-1, 2);
+                    pos_NED(i, 3)  = pos_NED(i-1, 3);
+                    E(i)           = E(i-1);                  
                 end
             end
 
