@@ -61,8 +61,8 @@ function cost = MOG_Solver(banner_length, W_S, AR, num_pucks)
     bat_Wh = 100;
     motor_kv = 710;
     motor_max_current = 68;
-    prop_pitch = 10;
-    prop_diam = 18;
+    prop_pitch = 8;
+    prop_diam = 11;
     aircraft.add_propulsion(bat_cells, bat_Wh, motor_kv, motor_max_current, prop_pitch, prop_diam);
 
     aircraft.analyze_airframe()
