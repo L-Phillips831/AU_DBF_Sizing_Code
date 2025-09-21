@@ -293,18 +293,14 @@ classdef Turn < mission.Mission_Segment
                 elseif dPsi_ < 0
                     eulers(i, 1) = -acosd(1/lf_Use); % Bank left to go left
                 end
-                if i > 1
-                    dt = abs((eulers(2, 3)-eulers(1, 3))/omega);
-                    v_NED(i, :) = v_NED(i-1, :) + a_NED * dt;
-                end
                 BI = Vehicle.get_DCM_BI(eulers(i, 1), eulers(i, 2), eulers(i, 3));
                 IB = BI';
                 vAir_NED(i, :) = v_NED(i, :);
-                a_Body = [0, 0, -g*lf_Use];
-                a_NED  = IB*a_Body';
-                a_NED  = a_NED' + [0, 0, g]; 
                 aCentr = g*sqrt(lf_Use^2 - 1);
-                omega  = 180/pi*aCentr/v_Calc;                     
+                omega  = 180/pi*aCentr/v_Calc; 
+                if i < 1
+                    dt = abs((eulers(2, 3)-eulers(1, 3))/omega);
+                end
                 if i>1
                     t(i) = t(i-1)+ dt;
                     E(i)         = E_Start + (t(i) - t(1)) * power(i);
