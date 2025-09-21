@@ -81,7 +81,8 @@ To do:
             weight = mass * g;
             Z_coords   = linspace(pos_NED_Start(3), -h_End, numVals_);
             d_Z  = Z_coords(2) - Z_coords(1);
-            [thrust_use, power_use] = obj.vehicle.prop.get_Thrust_Power(obj.T_set, vClimb_);
+            RPM = obj.vehicle.prop.calcRPM(obj.T_set);
+            [thrust_use, power_use] = obj.vehicle.prop.get_Thrust_Power(RPM, vClimb_);
             q_use     = 0.5 * rho * vClimb_^2;
             CL_use    = weight / (q_use * Sref);
             alpha_use = obj.vehicle.get_req_alpha(CL_use);

@@ -155,7 +155,8 @@ classdef Takeoff < mission.Mission_Segment
                 dt = (gamma_Air(2) - gamma_Air(1))/gammaDot;
                 q(i)     = 0.5 * rho * vAir_total(i-numVals_)^2;
                 CD(i)    = Cd_0 + k1*CL(i)^2;
-                [thrust(i), power(i)] = obj.vehicle.prop.get_Thrust_Power(obj.T_set, vAir_total(i-numVals_));
+                RPM = obj.vehicle.prop.calcRPM(obj.T_set);
+                [thrust(i), power(i)] = obj.vehicle.prop.get_Thrust_Power(RPM, vAir_total(i-numVals_));
                 pSpec = vAir_total(i-numVals_)*(thrust(i)-CD(i)*Sref*q(i))/weight; % Added this guy
                 dvTotal = vAir_total(2) - vAir_total(1);
                 pSpec_Z = pSpec - vAir_total(i-numVals_)/g*dvTotal/dt;
