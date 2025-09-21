@@ -2,16 +2,17 @@ classdef Mission_Builder < handle  % stupid in-place modification requirement
 
     properties (Access = private)
          n_laps (1,1) uint16                       % Total number of laps to be flown in the mission.
-         vehicle (1,1) Vehicle                     % Vehicle object containing aircraft information.
+         vehicle Vehicle                           % Vehicle object containing aircraft information.
          segments mission.Mission_Segment          % Heterogenous array of mission segment objects
          num_timesteps (1,1) double                % Number of timesteps for the mission segments to be split into
-    
+         vWind_NED (1,3) double
+
     end
 
     methods (Access = public)
 
       
-        function obj = Mission_Builder(n_laps_, vehicle_, num_timesteps_)
+        function obj = Mission_Builder(n_laps_, vehicle_, num_timesteps_, vWind_NED_)
             % Default Constructor for the mission class.
             % Params:
             %   - n_laps: positive integer that is the total number of laps
@@ -23,6 +24,7 @@ classdef Mission_Builder < handle  % stupid in-place modification requirement
             obj.n_laps = n_laps_;
             obj.vehicle = vehicle_;
             obj.num_timesteps = num_timesteps_;
+            obj.vWind_NED = vWind_NED_;
 
         end
 
@@ -38,16 +40,18 @@ classdef Mission_Builder < handle  % stupid in-place modification requirement
             %              Used to verify geometry convergence
             %
 
-            flight_keys = ["Time","E","Power","Distance","V","Acceleration","Altitude","hDot", ...
-               "Mass","Thrust","q","CL","CD","Lift","Drag","LD"];
+            flight_keys = ["Airspeed_NED","Groundspeed_NED","Windspeed_NED","Eulers","Position_NED", ...
+               "Mass","Throttle","Thrust_Body","q","CL","CD","Alpha","Gamma", ...
+               "Energy","Power","Time"];
 
+            % If tbl is not created yet, create it.
             if isempty(varargin)
                 tab = table('Size',[0 numel(flight_keys)], ...
-                'VariableNames',flight_keys, ...
-                'VariableTypes',"double");
-
+                    'VariableNames', flight_keys, ...
+                    'VariableTypes', repmat("double",1,numel(flight_keys)));
             end
 
+            % Propagate the segments
             for segment = obj.segments
                 tab = segment.run(tab);
                 
@@ -55,7 +59,7 @@ classdef Mission_Builder < handle  % stupid in-place modification requirement
 
 
             t_total = tab.Time(end);
-            E_total = tab.E(end);
+            E_total = tab.Energy(end);
 
         end
 
@@ -73,16 +77,21 @@ classdef Mission_Builder < handle  % stupid in-place modification requirement
 
 
         
-        function obj = add_takeoff(obj)
+        function obj = add_takeoff(obj, T_set, T_set_climb)
             % Method for adding takeoff mission segment
             % Params:
             %   - 
             %
 
+            takeoff_ = mission.Takeoff(T_set, T_set_climb, obj.num_timesteps, obj.vehicle, obj.vWind_NED);
+            obj.segments(end+1) = takeoff_;
+
+            
+
         end
 
 
-        function obj = add_climb(obj, hEnd, vClimb, hDotClimb)
+        function obj = add_climb(obj, hEnd, T_set)
             % Method for adding climb mission segment
             % Params:
             %   - hEnd: final height after climb [m]
@@ -92,7 +101,7 @@ classdef Mission_Builder < handle  % stupid in-place modification requirement
             %   - updated Mission_Builder object
             %
 
-            climb_segment = mission.Climb(hEnd, vClimb, hDotClimb, obj.num_timesteps, obj.vehicle);
+            climb_segment = mission.Climb(hEnd, T_set, obj.num_timesteps, obj.vehicle);
             obj.segments(end+1) = climb_segment;
 
         end

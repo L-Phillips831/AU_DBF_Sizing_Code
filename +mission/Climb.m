@@ -9,17 +9,17 @@ To do:
     
     properties
         hEnd (1,1) double
-        vClimb (1,1) double
-        vehicle (1,1) Vehicle
+        T_set (1,1) double
+        vehicle Vehicle
         numVals (1,1) double
 
     end
     
     methods
         % Default Constructor Method
-        function obj = Climb(hEnd, vClimb, numVals, vehicle)
+        function obj = Climb(hEnd, T_set, numVals, vehicle)
             obj.hEnd = hEnd;
-            obj.vClimb = vClimb;
+            obj.T_set = T_set;
             obj.vehicle = vehicle;
             obj.numVals = numVals;
 
@@ -33,13 +33,14 @@ To do:
 
 
         % General variables
-            Sref     = obj.vehicle.Sref;     
-            k        = obj.vehicle.k;            
-            Cd_0     = obj.vehicle.Cd_0;
+            Sref     = obj.vehicle.S_ref;     
+            k2        = obj.vehicle.K2;
+            k1       = obj.vehicle.K1;
+            Cd_0     = obj.vehicle.CD_0;
             rho      = obj.vehicle.rho;      
             g        = 9.81;    % Acceleration due to gravity [m/s^2]
             numVals_ = obj.numVals;
-            vClimb_    = obj.vClimb;
+            vClimb_    = norm(tab.Airspeed_NED);
 
             % Initialize table variables
             h_End           = obj.hEnd;
@@ -80,11 +81,11 @@ To do:
             weight = mass * g;
             Z_coords   = linspace(pos_NED_Start(3), -h_End, numVals_);
             d_Z  = Z_coords(2) - Z_coords(1);
-            [thrust_use, power_use] = obj.Propulsion.get_Thrust_Power(obj.T_set, vClimb_);
+            [thrust_use, power_use] = obj.vehicle.prop.get_Thrust_Power(obj.T_set, vClimb_);
             q_use     = 0.5 * rho * vClimb_^2;
             CL_use    = weight / (q_use * Sref);
-            alpha_use = obj.vehicle.get_req_alpha(obj, CL_use);
-            CD_use    = Cd_0 + k*CL_use^2;
+            alpha_use = obj.vehicle.get_req_alpha(CL_use);
+            CD_use    = Cd_0 + k1*CL_use + k2*CL_use^2;
             drag      = CD_use * Sref * q_use;
             pSpec     = (thrust_use - drag) * vClimb_ / weight;
             dt        = d_Z / -pSpec;

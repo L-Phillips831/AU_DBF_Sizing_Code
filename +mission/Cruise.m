@@ -5,7 +5,7 @@ classdef Cruise < mission.Mission_Segment
     properties (Access = private)
         T_set   (1,1) double
         dDelta  (1,1) double
-        vehicle (1,1) Vehicle
+        vehicle Vehicle
         numVals (1,1) double
         windVec (3, 1) double
     end
@@ -30,9 +30,10 @@ classdef Cruise < mission.Mission_Segment
         % To do:
 
         % General variables
-            Sref     = obj.vehicle.Sref;     
-            k        = obj.vehicle.k;            
-            Cd_0      = obj.vehicle.Cd_0;
+            Sref     = obj.vehicle.S_ref;     
+            k2        = obj.vehicle.K2;
+            k1       = obj.vehicle.K1;
+            Cd_0      = obj.vehicle.CD_0;
             rho      = obj.vehicle.rho;      
             g        = 9.81;    % Acceleration due to gravity [m/s^2]
             numVals_ = obj.numVals;
@@ -88,7 +89,7 @@ classdef Cruise < mission.Mission_Segment
             L                     = weight - sind(alpha(i)) * thrust(i);
             CL(i)                 = L / (q(i) * Sref);
             eulers(i, :)          = [0, alpha(i), psi_Start];
-            CD(i)                 = Cd_0 + k * CL(i)^2;
+            CD(i)                 = Cd_0 + k1*CL(i) + k2 * CL(i)^2;
             D                     = CD(i) * q(i) * Sref;
             F_x_NED               = direc_Scalar * (cosd(alpha(i)) * thrust(i) - D);
             a_NED                 = [F_x_NED, 0, 0]/mass;

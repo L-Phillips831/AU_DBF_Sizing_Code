@@ -19,7 +19,7 @@ classdef Vehicle < handle
         CG (3,1) double                                 % X,Y,Z loc of CG [m]
 
         W_S (1,1) double                                % Vehicle wing loading [kg/m^2]
-        P2W (1,1) double
+        P2W (1,1) double = 1.0
         mission_1_W (1,1) double
         mission_2_W (1,1) double
         mission_3_W (1,1) double
@@ -42,6 +42,8 @@ classdef Vehicle < handle
         CD_0 (1,1) double                               % Vehicle zero-lift drag coefficient [-]
         K2 (1,1) double                                 % Vehicle parabolic drag coefficient [-]
         K1 (1,1) double                                 % Vehicle linear drag coefficient [-]
+
+        rho (1,1) double = 1.225;                       % Air denisity vehicle sees [kg/m^3]
     
     end
 
@@ -56,14 +58,15 @@ classdef Vehicle < handle
     
     methods
 
+
         % Default constructor of the Vehicle class.
         % Params:
         %   - 
         %
-        function obj = Vehicle(name_, W_S_, P2W_, num_pucks_, banner_length_, HT_coeff_, VT_Coeff_)
+        function obj = Vehicle(name_, W_S_, num_pucks_, banner_length_, HT_coeff_, VT_Coeff_)
+
             obj.name = name_;
             obj.W_S = W_S_;
-            obj.P2W = P2W_;
             obj.num_pucks = num_pucks_;
             obj.banner_length = banner_length_;
             obj.HT_coeff = HT_coeff_;

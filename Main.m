@@ -16,7 +16,7 @@ GA_optimizer = optimizer.GA_Optimizer(ga_settings);  % Create optimizer object
 
 
 % [best_score, best_params] = GA_optimizer.run(@MOG_Solver);
-MOG_Solver(10*0.3048, 5.16, 2, 4.4, 3);
+MOG_Solver(10*0.3048, 5.16, 4.4, 3);
 
 
 
@@ -30,10 +30,10 @@ MOG_Solver(10*0.3048, 5.16, 2, 4.4, 3);
 %% Running the MOG Solver
 
 
-function cost = MOG_Solver(banner_length, W_S, P2W, AR, num_pucks)
+function cost = MOG_Solver(banner_length, W_S, AR, num_pucks)
 
     %%% Define Vehicle
-    aircraft = Vehicle("Aircraft", W_S, P2W, num_pucks, banner_length, 0.7, 0.05);
+    aircraft = Vehicle("Aircraft", W_S, num_pucks, banner_length, 0.7, 0.05);
 
     % Add wing
     wing_q4 = 0.5; % [m]
@@ -112,49 +112,62 @@ function cost = MOG_Solver(banner_length, W_S, P2W, AR, num_pucks)
     % [t_total, E_total] = mission_1.run();
 
 
-    % Mission 2
-    mission_2 = mission.Mission_Builder(mission_2_laps, aircraft, mission_1_steps);
+
+    %%% Mission 2
+    flag_dist = 500 * 0.3048;
+    mission_2_laps = 3;
+    mission_2_steps = 50;
+    vWind = [0 0 0];
+    mission_2 = mission.Mission_Builder(mission_2_laps, aircraft, mission_2_steps, vWind);
 
     % Lap 1
-    mission_2.add_takeoff();
-    mission_2.add_climb(mission_1_cruise_alt, mission_1_throttle, 200);
-    % next cruise distance = mission_1_flag_dist/2 - distance traveled
-    mission_2.add_cruise(mission_1_flag_dist/2, mission_1_throttle);
-    mission_2.add_turn(180, 'instantaneous');
-    mission_2.add_cruise(mission_1_flag_dist/2, mission_1_throttle);
-    mission_2.add_turn(360, 'sustained');
-    mission_2.add_cruise(mission_1_flag_dist/2, mission_1_throttle);
-    mission_2.add_turn(180, 'instantaneous');
-    mission_2.add_cruise(mission_1_flag_dist/2, mission_1_throttle);
-    [t_final, E_final, tab] = mission_2.run();
+    m2_laps = 0;
+    m2_takeoff_setting = 0.9;
+    m2_climb_throttle = 0.8;
+    mission_2.add_takeoff(m2_takeoff_setting, m2_climb_throttle);
 
-    m2_laps = 1;
+    m2_climb_h = 200 * 0.3048;
+    mission_2.add_climb(m2_climb_h, m2_climb_throttle);
+    [t_final, ~, tab] = mission_2.run()
+
+    dist_traveled = tab.Position_NED(end,1);
+    m2_lap1_cruise = flag_dist/2 - dist_traveled;
+    m2_cruise_throttle = 0.7;
+    mission_2.add_cruise(m2_lap1_cruise, m2_cruise_throttle);
+
+    % Finish the lap
+    m2_turn_throttle = 0.9;
+    mission_2.add_turn(m2_turn_throttle, 180, 'sustained');
+    mission_2.add_cruise(flag_dist/2, mission_1_throttle);
+    mission_2.add_turn(m2_turn_throttle, 360, 'sustained');
+    mission_2.add_cruise(flag_dist/2, mission_1_throttle);
+    mission_2.add_turn(m2_turn_throttle, 180, 'sustained');
+    mission_2.add_cruise(flag_dist/2, mission_1_throttle);
+    
 
 
    while (true)
         prev_tab = tab;
         last_t = t_final;
-        last_E = E_final;
 
-        mission_2.clear();
-        mission_2.add_cruise(mission_1_flag_dist/2, mission_1_throttle);
-        mission_2.add_turn(180, 'instantaneous');
-        mission_2.add_cruise(mission_1_flag_dist/2, mission_1_throttle);
+        mission_2.add_cruise(flag_dist/2, m2_cruise_throttle);
+        mission_2.add_turn(m2_turn_throttle, 180, 'sustained');
+        mission_2.add_cruise(flag_dist/2, mission_1_throttle);
         mission_2.add_turn(360, 'sustained');
         mission_2.add_cruise(mission_1_flag_dist/2, mission_1_throttle);
-        mission_2.add_turn(180, 'instantaneous');
+        mission_2.add_turn(180, 'sustained');
         mission_2.add_cruise(mission_1_flag_dist/2, mission_1_throttle);
         [t_final, E_final, tab] = mission_2.run(prev_tab);
-
-
+        mission_2.clear();
+        
 
         if abs(t_final - 300) < 1e-6
             break;
 
         elseif t_final > 300
+            % If you fail to complete the lap before 5 min, dont count the time for
+            % scoring
             t_final = last_t;
-            E_final = last_E;
-            tab = prev_tab;
             break;
         end
 
@@ -162,10 +175,19 @@ function cost = MOG_Solver(banner_length, W_S, P2W, AR, num_pucks)
         m2_laps = m2_laps + 1;
     end
 
+
     mission_2_E = E_final;
     mission_2_t = t_final;
 
 
+
+
+
+    %%% Mission 3
+
+
+
+    %%% Gather Total Performance
     max_E = max([mission_1_E, mission_2_E, mission_3_E]);
     if max_E > 100
         cost = 10e6;

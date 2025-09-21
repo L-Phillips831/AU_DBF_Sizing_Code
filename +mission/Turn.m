@@ -11,17 +11,19 @@ classdef Turn < mission.Mission_Segment
     % - Take wind out of the equation
     
     properties       
-        vehicle (1,1) Vehicle
+        vehicle Vehicle
         dPsi (1,1) double
         numVals (1,1) double
         option char
+        T_set (1,1) double
 
     end
     
     methods
 
-        function obj = Turn(dPsi, numVals, vehicle, option)
+        function obj = Turn(T_set, dPsi, numVals, vehicle, option)
 
+            obj.T_set = T_set;
             obj.vehicle = vehicle;
             obj.dPsi = dPsi;
             obj.numVals = numVals;
@@ -68,9 +70,10 @@ classdef Turn < mission.Mission_Segment
         % not fixed because speed and lift vary.
 
         % General variables
-            Sref     = obj.vehicle.Sref;                                              
-            k        = obj.vehicle.k;                                                  
-            Cd_0     = obj.vehicle.Cd_0;                                                
+            Sref     = obj.vehicle.S_ref;                                              
+            k2        = obj.vehicle.K2;
+            k1       = obj.vehicle.K1;
+            Cd_0     = obj.vehicle.CD_0;                                                
             rho      = obj.vehicle.rho;  
             g        = 9.81;     % Acceleration due to gravity [m/s^2] 
             numVals_ = obj.numVals;
@@ -148,7 +151,7 @@ classdef Turn < mission.Mission_Segment
                 LmaxStructure  = lfStruc*mass*g;
                 L              = min([LmaxAero, LmaxStructure]);                         % Constrained by aero or structure
                 CL(i)          = L/(Sref*q(i));
-                CD(i)          = Cd_0 + k*CL(i)^2;
+                CD(i)          = Cd_0 + k1*CL(i) + k2*CL(i)^2;
                 D              = CD(i) * q(i) * Sref;
                 vAir_Body      = BI * vAir_NED(i, :)';
                 [thrust(i), power(i)] = obj.vehicle.Propulsion.get_Thrust_Power(T_set_, vAir_Body(1));
