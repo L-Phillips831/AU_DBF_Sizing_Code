@@ -61,8 +61,8 @@ function cost = MOG_Solver(banner_length, W_S, AR, num_pucks)
     bat_Wh = 100;
     motor_kv = 710;
     motor_max_current = 68;
-    prop_pitch = 8.5;
-    prop_diam = 14;
+    prop_pitch = 8;
+    prop_diam = 11;
     aircraft.add_propulsion(bat_cells, bat_Wh, motor_kv, motor_max_current, prop_pitch, prop_diam);
 
     aircraft.analyze_airframe()
@@ -119,7 +119,7 @@ function cost = MOG_Solver(banner_length, W_S, AR, num_pucks)
     mission_2_laps = 3;
     mission_2_steps = 50;
     vWind = [0 0 0];
-    mission_2 = mission.Mission_Builder(mission_2_laps, aircraft, mission_2_steps, vWind);
+    mission_2 = mission.Mission_Builder(mission_2_laps, aircraft, mission_2_steps, vWind, 'mission 2');
 
     % Lap 1
     m2_laps = 0;
@@ -130,6 +130,7 @@ function cost = MOG_Solver(banner_length, W_S, AR, num_pucks)
     m2_climb_h = 200 * 0.3048;
     mission_2.add_climb(m2_climb_h, m2_climb_throttle);
     [t_final, ~, tab] = mission_2.run()
+    mission_2.clear();
 
     dist_traveled = tab.Position_NED(end,1);
     m2_lap1_cruise = flag_dist/2 - dist_traveled;
@@ -139,12 +140,14 @@ function cost = MOG_Solver(banner_length, W_S, AR, num_pucks)
     % Finish the lap
     m2_turn_throttle = 0.9;
     mission_2.add_turn(m2_turn_throttle, 180, 'sustained');
-    mission_2.add_cruise(flag_dist/2, mission_1_throttle);
+    mission_2.add_cruise(flag_dist/2, m2_cruise_throttle);
     mission_2.add_turn(m2_turn_throttle, 360, 'sustained');
-    mission_2.add_cruise(flag_dist/2, mission_1_throttle);
+    mission_2.add_cruise(flag_dist/2, m2_cruise_throttle);
     mission_2.add_turn(m2_turn_throttle, 180, 'sustained');
-    mission_2.add_cruise(flag_dist/2, mission_1_throttle);
+    mission_2.add_cruise(flag_dist/2, m2_cruise_throttle);
     
+    [t_final, ~, tab] = mission_2.run(tab);
+    mission_2.clear();
 
 
    while (true)
@@ -153,11 +156,12 @@ function cost = MOG_Solver(banner_length, W_S, AR, num_pucks)
 
         mission_2.add_cruise(flag_dist/2, m2_cruise_throttle);
         mission_2.add_turn(m2_turn_throttle, 180, 'sustained');
-        mission_2.add_cruise(flag_dist/2, mission_1_throttle);
-        mission_2.add_turn(360, 'sustained');
-        mission_2.add_cruise(mission_1_flag_dist/2, mission_1_throttle);
-        mission_2.add_turn(180, 'sustained');
-        mission_2.add_cruise(mission_1_flag_dist/2, mission_1_throttle);
+        mission_2.add_cruise(flag_dist/2, m2_cruise_throttle);
+        mission_2.add_turn(m2_turn_throttle, 360, 'sustained');
+        mission_2.add_cruise(flag_dist/2, m2_cruise_throttle);
+        mission_2.add_turn(m2_turn_throttle, 180, 'sustained');
+        mission_2.add_cruise(flag_dist/2, m2_cruise_throttle);
+    
         [t_final, E_final, tab] = mission_2.run(prev_tab);
         mission_2.clear();
         

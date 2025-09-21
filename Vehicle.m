@@ -266,7 +266,7 @@ classdef Vehicle < handle
             % coefficient.
             %
 
-            alpha = (CL_req_ - obj.Cl_0) / obj.Cl_alpha;
+            alpha = (CL_req_ - obj.Cl_0) / obj.Cl_alpha * 180/pi;
         end
 
 
