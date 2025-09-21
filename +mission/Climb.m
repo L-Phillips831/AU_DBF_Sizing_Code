@@ -40,7 +40,7 @@ To do:
             rho      = obj.vehicle.rho;      
             g        = 9.81;    % Acceleration due to gravity [m/s^2]
             numVals_ = obj.numVals;
-            vClimb_    = norm(tab.Airspeed_NED);
+            vClimb_    = norm(tab.Airspeed_NED(end, :));
 
             % Initialize table variables
             h_End           = obj.hEnd;

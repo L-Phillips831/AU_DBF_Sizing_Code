@@ -46,10 +46,10 @@ classdef Turn < mission.Mission_Segment
             
             switch obj.option
                 case {'instantaneous', 'Instantaneous'}
-                    tbl = obj.InstantaneousTurn(obj.dPsi, tab);
+                    tbl = obj.InstantaneousTurn(tab);
 
                 case {'sustained', 'Sustained'}
-                    tbl = obj.SustainedTurn(obj.dPsi, tab);
+                    tbl = obj.SustainedTurn(tab);
 
                 otherwise  
                     error("Option must be (I/i)nstantaneous or (S/s)ustained");
@@ -210,12 +210,13 @@ classdef Turn < mission.Mission_Segment
             % - Alpha assumed 0 to match thrust/drag and lift/weight
 
         % General variables
-            Sref     = obj.vehicle.Sref;                                              
-            k        = obj.vehicle.k;                                                  
-            Cd_0     = obj.vehicle.Cd_0;                                                
+            Sref     = obj.vehicle.S_ref;  
+            % K1        = obj.vehicle.K1;  
+            K2        = obj.vehicle.K2;                                                  
+            Cd_0     = obj.vehicle.CD_0;                                                
             rho      = obj.vehicle.rho;                                       
             g        = 9.81; 
-            lfStruc  = obj.vehicle.lfStruc;
+            lfStruc  = obj.vehicle.lf_struc;
             k_Safe_  = 1.5;
             numVals_ = obj.numVals;
             Cl_max   = obj.vehicle.Cl_max;
@@ -246,7 +247,9 @@ classdef Turn < mission.Mission_Segment
             E         = E_Start*ones(numVals_, 1);
             alpha     = zeros(numVals_,1);
             eulers    = zeros(numVals_,3);
-            gamma     = zeros(numVals_,1);                      
+            gamma     = zeros(numVals_,1);  
+
+            v_NED(:, 3) = 0;
 
             % Discretization on heading
             psi = psi_Start + linspace(0, dPsi_, numVals_);
@@ -267,10 +270,11 @@ classdef Turn < mission.Mission_Segment
 
             % Calculate Sustained turn constant values
             v_Calc = sqrt(sum(vAir_NED_Start.^2));
-            [thrust_Val, power_Val] = obj.vehicle.Propulsion.get_Thrust_Power(obj.T_set, v_Calc);
+            RPM = obj.vehicle.prop.calcRPM(obj.T_set);
+            [thrust_Val, power_Val] = obj.vehicle.prop.get_Thrust_Power(RPM, v_Calc);
             q_Val    = 0.5 * rho * v_Calc^2;
             CD_Val   = thrust_Val / (Sref * q_Val);
-            CL_Val   = sqrt((CD_Val - Cd_0)/k);
+            CL_Val   = sqrt((CD_Val - Cd_0)/K2);
             CL_Use   = min(CL_Val, Cl_max);
             lift_Val = CL_Use * q_Val * Sref;
             lf_Aero  = lift_Val / (weight * k_Safe_^2);

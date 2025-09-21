@@ -33,6 +33,7 @@ classdef Vehicle < handle
         aircraft_length (1,1) double                    % Length value use to approximate L_HT [m]
         L_HT (1,1) double                               % Horizontal tail moment arm [m]
 
+        lf_struc (1,1) double = 8.0                     % Structural Load Factor
         mass (1,1) double                               % Vehicle mass  [kg]
         Cl_alpha (1,1) double                           % Vehicle Cl_alpha [-]
         Cl_0 (1,1) double                               % Vehicle Cl_0 [-]

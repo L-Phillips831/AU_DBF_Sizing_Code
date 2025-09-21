@@ -65,6 +65,12 @@ classdef Cruise < mission.Mission_Segment
             eulers    = zeros(numVals_,3);
             gamma     = zeros(numVals_,1);
 
+            vAir_NED(:, 2) = 0;            
+            vAir_NED(:, 3) = 0;
+            v_NED(:, 2) = 0;
+            v_NED(:, 3) = 0;
+            eulers(:, 3) = psi_Start;
+
             % Heading check for adding change in distance in +/- x_I
             if abs(abs(psi_Start) - 180) < 1
                 delta_NED = - obj.dDelta;
@@ -97,10 +103,10 @@ classdef Cruise < mission.Mission_Segment
             dt = abs(pos_NED(2, 1)-pos_NED(1, 1)) / v_NED(i, 1);
             if i > 1
                 t(i)       = t(i-1) + dt;
+                E(i) = E(i-1) + power(i)*dt;
             end
             if i < numVals_
                 v_NED(i+1, :) = v_NED(i, :) + a_NED*dt;
-                E(i) = E_Start + trapz(t(1:i) , power(1:i));
             end
         end
 
