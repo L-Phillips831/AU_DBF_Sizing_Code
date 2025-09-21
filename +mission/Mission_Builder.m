@@ -12,7 +12,7 @@ classdef Mission_Builder < handle  % stupid in-place modification requirement
     methods (Access = public)
 
       
-        function obj = Mission_Builder(n_laps_, vehicle_, num_timesteps_, vWind_NED_)
+        function obj = Mission_Builder(n_laps_, vehicle_, num_timesteps_, vWind_NED_, flag_)
             % Default Constructor for the mission class.
             % Params:
             %   - n_laps: positive integer that is the total number of laps
@@ -25,6 +25,17 @@ classdef Mission_Builder < handle  % stupid in-place modification requirement
             obj.vehicle = vehicle_;
             obj.num_timesteps = num_timesteps_;
             obj.vWind_NED = vWind_NED_;
+
+            switch flag_
+                case 'mission 1'
+                    obj.vehicle.mass = obj.vehicle.mission_1_W;
+                case 'mission 2'
+                    obj.vehicle.mass = obj.vehicle.mission_2_W;
+                case 'mission 3'
+                    obj.vehicle.mass = obj.vehicle.mission_3_W;
+                otherwise
+                    error('Improper mission flag.');
+            end
 
         end
 
@@ -49,6 +60,11 @@ classdef Mission_Builder < handle  % stupid in-place modification requirement
                 tab = table('Size',[0 numel(flight_keys)], ...
                     'VariableNames', flight_keys, ...
                     'VariableTypes', repmat("double",1,numel(flight_keys)));
+
+            elseif isscalar(varargin)
+                tab = varargin{1};
+            else 
+                error("Too many inputs. Either input table if it exists or no arguments.");
             end
 
             % Propagate the segments
@@ -72,7 +88,7 @@ classdef Mission_Builder < handle  % stupid in-place modification requirement
             %   - the updated object
             %
             
-            obj.segments = [];
+            obj.segments = mission.Mission_Segment.empty();
         end
 
 
@@ -123,7 +139,7 @@ classdef Mission_Builder < handle  % stupid in-place modification requirement
         end
 
 
-        function obj = add_turn(obj, dPhi, option)
+        function obj = add_turn(obj, T_set, dPhi, option)
             % Method for adding turn mission segment
             % Params:
             %   - dPhi: heading change [deg]
@@ -132,7 +148,7 @@ classdef Mission_Builder < handle  % stupid in-place modification requirement
             %   - updated Mission_Builder Object
             %
 
-            turn_segment = mission.Turn(dPhi, obj.num_timesteps, obj.vehicle, option);
+            turn_segment = mission.Turn(T_set, dPhi, obj.num_timesteps, obj.vehicle, option);
             obj.segments(end+1) = turn_segment;
 
         end

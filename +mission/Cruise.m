@@ -15,7 +15,7 @@ classdef Cruise < mission.Mission_Segment
             obj.T_set    = T_set;
             obj.dDelta   = dDelta;
             obj.vehicle  = vehicle;
-            obj.numVals_ = numVals;
+            obj.numVals = numVals;
            
         end
 
@@ -58,7 +58,7 @@ classdef Cruise < mission.Mission_Segment
             q         = zeros(numVals_, 1);
             CL        = zeros(numVals_, 1);
             CD        = zeros(numVals_, 1);
-            mass      = (tab.mass(end));                   
+            mass      = (tab.Mass(end));                   
             power     = zeros(numVals_,1);
             E         = E_Start*ones(numVals_, 1);
             alpha     = zeros(numVals_,1);
@@ -83,9 +83,10 @@ classdef Cruise < mission.Mission_Segment
             vAir_NED(i, :)        = v_NED(i, :) - vWind_NED(i, :);
             q(i)                  = 0.5 * rho * vAir_NED(i, 1)^2;
             CL_guess              = weight/(q(i)*Sref);
-            alpha(i)              = obj.vehicle.get_req_alpha(obj, CL_guess);
+            alpha(i)              = obj.vehicle.get_req_alpha( CL_guess);
             vAir_x_Body           = cosd(alpha(i)) * vAir_NED(i, 1);
-            [thrust(i), power(i)] = obj.vehicle.Propulsion.get_Thrust_Power(obj.T_set, vAir_x_Body);
+            RPM                   = obj.vehicle.prop.calcRPM(obj.T_set);
+            [thrust(i), power(i)] = obj.vehicle.prop.get_Thrust_Power(RPM, vAir_x_Body);
             L                     = weight - sind(alpha(i)) * thrust(i);
             CL(i)                 = L / (q(i) * Sref);
             eulers(i, :)          = [0, alpha(i), psi_Start];
