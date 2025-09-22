@@ -12,13 +12,13 @@ clc, clear, close all;
                         % Banner Length     W_S     AR      Num_Pucks
 ga_settings.lower_bds = [5*0.3048,          96,     4,       1];                        % Set the lower bounds for the optimizer
 ga_settings.upper_bds = [30*0.3048,         200,    8,      10];                        % Set the upper bounds for the  optimizer
-ga_settings.pop_size = 25;                                                              % Set the population size for GA optimizer
-ga_settings.generations = 15;                                                           % Define the number of generations for the GA optimizer
+ga_settings.pop_size = 15;                                                              % Set the population size for GA optimizer
+ga_settings.generations = 5;                                                           % Define the number of generations for the GA optimizer
 GA_optimizer = optimizer.GA_Optimizer(ga_settings);                                     % Create optimizer object       
 
 
-[best_score, best_params] = GA_optimizer.run(@MOG_Solver);
-% MOG_Solver([9.10303528919316	195.098305619556	5.42172396452136    1.84206183208210]);
+% [best_score, best_params] = GA_optimizer.run(@MOG_Solver);
+MOG_Solver([8.38192251177078	115.884503942293	5.84665642773867	1.05790321640620]);
 
 % Optimized Params
 
@@ -62,7 +62,15 @@ function cost = MOG_Solver(input_arr)
     taper_ = 1;
     sweep_ = 0;
     airfoil_ = 'NACA2412';
-    aircraft.add_wing(wing_q4, 0, AR, taper_, sweep_, airfoil_);
+    [~, flag] = aircraft.add_wing(wing_q4, 0, AR, taper_, sweep_, airfoil_);
+
+    if ~flag
+        cost = 1e8;
+        fprintf("Wing too large for specified AR! \n");
+        fprintf("Setting cost to %.3e.\n", cost);
+        total_iterations = total_iterations + 1;
+        return;
+    end
 
     % Add fuselage
     aircraft.add_fuselage();
@@ -111,33 +119,43 @@ function cost = MOG_Solver(input_arr)
         return;
     end
 
-    safety_margin = 1.0;
+    safety_margin = 1.2;
 
-    % while (abs(max_E*safety_margin - aircraft.battery_capacity) > 1)
-    %     fprintf("Current Solved Energy is %.3f Wh. Resizing.\n", max_E);
-    %     aircraft.resize_geom(max_E*safety_margin);
-    % 
-    % 
-    %     [mission_1_t, mission_1_E, tab] = run_mission_1(aircraft, flag_dist, vWind);
-    %     [mission_2_t, mission_2_E, tab, m2_laps] = run_mission_2(aircraft, flag_dist, vWind);
-    %     [mission_3_t, mission_3_E, tab, m3_laps] = run_mission_3(aircraft, flag_dist, vWind);
-    % 
-    % 
-    %     mission_1_E = 0;
-    % 
-    %     %%% Gather Total Performance
-    %     max_E = max([mission_1_E, mission_2_E, mission_3_E]) / 3600;
-    %     if max_E > 100
-    %         cost = (max_E - 100) * 1e4; % Signal that this branch is better than others
-    %         fprintf("Aircraft failed to meet 100 Wh limit. Total Energy usage of %.3f\n", max_E);
-    %         fprintf("Setting cost to %.3e\n", cost);
-    %         total_iterations = total_iterations + 1;
-    %         return;
-    %     end
-    % 
-    % 
-    % 
-    % end
+    while (abs(max_E*safety_margin - aircraft.battery_capacity) > 10)
+        old_aircraft = aircraft;
+        old_E = max_E;
+        fprintf("Current Solved Energy is %.3f Wh. Resizing.\n", max_E);
+        [~, flag] = aircraft.resize_geom(max_E*safety_margin);
+
+        if ~flag
+            fprintf("New Wing too large for specified AR! \n");
+            fprintf("Using previous iteration.\n");
+            aircraft = old_aircraft;
+            max_E = old_E;
+            break;
+        end
+
+
+        [mission_1_t, mission_1_E, tab] = run_mission_1(aircraft, flag_dist, vWind);
+        [mission_2_t, mission_2_E, tab, m2_laps] = run_mission_2(aircraft, flag_dist, vWind);
+        [mission_3_t, mission_3_E, tab, m3_laps] = run_mission_3(aircraft, flag_dist, vWind);
+
+
+        mission_1_E = 0;
+
+        %%% Gather Total Performance
+        max_E = max([mission_1_E, mission_2_E, mission_3_E]) / 3600;
+        if max_E > 100
+            fprintf("New Aircraft failed to meet 100 Wh limit. Total Energy usage of %.3f\n", max_E);
+            fprintf("Using previous iteration.\n");
+            aircraft = old_aircraft;
+            max_E = old_E;
+            break;
+        end
+
+
+
+    end
 
     fprintf("Design Converged at %.3f Wh.\n", max_E);
     converged_iterations = converged_iterations + 1;
@@ -179,6 +197,8 @@ function cost = MOG_Solver(input_arr)
     cost = 1/score * 100; % Higher score generates lower cost.
 
     fprintf("Generated cost: %.3f\n", cost);
+
+    aircraft
 
 
 end

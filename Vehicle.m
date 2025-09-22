@@ -29,6 +29,8 @@ classdef Vehicle < handle
         S_ref (1,1) double                              % Vehicle reference area  [m]
         c_ref (1,1) double                              % Vehicle reference chord [m]
         b_ref (1,1) double                              % Vehicle reference span  [m]
+        min_AR (1,1) double = 4
+        max_AR (1,1) double = 8
         HT_coeff (1,1) double                           % Horizontal tail volume coefficient [-]
         VT_coeff (1,1) double                           % Vertical tail volume coefficieint [-]
         aircraft_length (1,1) double                    % Length value use to approximate L_HT [m]
@@ -81,7 +83,7 @@ classdef Vehicle < handle
         
 
         
-        function obj = add_wing(obj, x_loc_q4_, z_loc_, AR_, taper_, sweep_, airfoil_)
+        function [obj, flag] = add_wing(obj, x_loc_q4_, z_loc_, AR_, taper_, sweep_, airfoil_)
             % Method for adding the main wing to the vehicle component list.
             % Params: 
             %   - x_loc_q4_: double location of quarter chord relative to nose
@@ -95,11 +97,20 @@ classdef Vehicle < handle
             %   - updated vehicle object with component addition
             %
 
+            flag = true;
+
             wing_area = obj.MTOW / obj.W_S;
             wing_span = sqrt(AR_ * wing_area);
             if wing_span > 5.0*0.3048
                 wing_span = 5*.3048;
                 AR_ = wing_span^2 / wing_area;
+
+                % Verify this is an allowable wing
+                if AR_ > obj.max_AR || AR_ < obj.min_AR
+                    flag = false;
+                    return;
+                end
+
             end
 
             root_chord_ = wing_area / 0.5 / wing_span / (1 + taper_);
@@ -283,37 +294,48 @@ classdef Vehicle < handle
 
 
         %%%  BUGGY
-        function obj = resize_geom(obj, new_E)
+        function [obj, flag] = resize_geom(obj, new_E)
+            
+            flag = true;
 
             % Update new battery size
             obj.prop.battery.energyCapacity = new_E;
             obj.battery_capacity = new_E;
 
             % Redetermine MTOW
+            fprintf("Previous MTOW %.3f\n", obj.MTOW);
             obj.get_weights();
+            fprintf("New MTOW: %.3f\n\n", obj.MTOW);
 
             % Resize Geometry
 
             % --- Pass 1: Find and size wing ---
             for component = obj.components
-                if isa(component, "Lifting_Surface") && component.style == "Wing"
-                    component.S = obj.W_S / obj.MTOW;
-                    component.span = min(5.0, sqrt(component.AR * component.S));
+                if isa(component, "geom.Lifting_Surface") && component.style == "Wing"
+                    component.S = obj.MTOW / obj.W_S;
+                    component.span = min(5.0*0.3048, sqrt(component.AR * component.S));
                     component.AR   = component.span^2 / component.S;
+                                   
+                    % Verify this is an allowable wing
+                    if component.AR > obj.max_AR || component.AR < obj.min_AR
+                        flag = false;
+                        return;
+                    end
+                
+
                     component.chord = component.S / 0.5 / component.span / (1 + component.taper);
 
                     obj.S_ref = component.S;
                     obj.c_ref = component.chord;
                     obj.b_ref = component.span;
 
-                    root_chord_ = component.S / (0.5*component.span*(1+component.taper));
-                    component.x_loc = obj.aircraft_length*0.4 - 0.25*root_chord_;
+                    component.x_loc = obj.aircraft_length*0.4 - 0.25*component.chord;
                 end
             end
 
             % --- Pass 2: Size the rest ---
             for component = obj.components
-                if isa(component, "Lifting_Surface")
+                if isa(component, "geom.Lifting_Surface")
                     switch component.style
                         case "HT"
                             S_HT = obj.S_ref * obj.c_ref * obj.HT_coeff / obj.L_HT;
