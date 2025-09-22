@@ -58,12 +58,14 @@ function [cost, aircraft, m2_laps, m3_laps] = MOG_Solver(input_arr)
     %%% Define Vehicle
     aircraft = Vehicle("Aircraft", W_S, num_pucks, banner_length, 0.7, 0.05);
 
+    % Add fuselage
+    aircraft.add_fuselage();
+
     % Add wing
-    wing_q4 = 0.5; % [m]
     taper_ = 1;
     sweep_ = 0;
     airfoil_ = 'NACA2412';
-    [~, flag] = aircraft.add_wing(wing_q4, 0, AR, taper_, sweep_, airfoil_);
+    [~, flag] = aircraft.add_wing(0, AR, taper_, sweep_, airfoil_);
 
     if ~flag
         cost = 1e8;
@@ -72,9 +74,6 @@ function [cost, aircraft, m2_laps, m3_laps] = MOG_Solver(input_arr)
         total_iterations = total_iterations + 1;
         return;
     end
-
-    % Add fuselage
-    aircraft.add_fuselage();
 
     % Add HT
     HT_AR_ = 3.0;

@@ -34,6 +34,7 @@ classdef Vehicle < handle
         HT_coeff (1,1) double                           % Horizontal tail volume coefficient [-]
         VT_coeff (1,1) double                           % Vertical tail volume coefficieint [-]
         aircraft_length (1,1) double                    % Length value use to approximate L_HT [m]
+        fuselage_length (1,1) double
         L_HT (1,1) double                               % Horizontal tail moment arm [m]
 
         lf_struc (1,1) double = 8.0                     % Structural Load Factor
@@ -83,7 +84,7 @@ classdef Vehicle < handle
         
 
         
-        function [obj, flag] = add_wing(obj, x_loc_q4_, z_loc_, AR_, taper_, sweep_, airfoil_)
+        function [obj, flag] = add_wing(obj, z_loc_, AR_, taper_, sweep_, airfoil_)
             % Method for adding the main wing to the vehicle component list.
             % Params: 
             %   - x_loc_q4_: double location of quarter chord relative to nose
@@ -98,6 +99,8 @@ classdef Vehicle < handle
             %
 
             flag = true;
+
+            x_loc_q4_ = obj.fuselage_length / 2; % estimating CG of fuselage
 
             wing_area = obj.MTOW / obj.W_S;
             wing_span = sqrt(AR_ * wing_area);
@@ -201,16 +204,17 @@ classdef Vehicle < handle
             %   - updated vehicle object with added component
             %
 
-            duck_length = 2.5 * 0.00254;
-            puck_thickness = 1 * 0.00254;
+            duck_length = 2.5 * 0.0254;
+            puck_thickness = 1 * 0.0254;
 
-            diameter = 4.75 * 0.00254; % [in -> m]
+            diameter = 4.75 * 0.0254; % [in -> m]
 
-            elec_length = 9 * 0.00254;
+            elec_length = 9 * 0.0254;
             length = elec_length + (obj.num_ducks / 2 * duck_length) + obj.num_pucks*puck_thickness;
 
             fuselage = geom.Fuselage(length, diameter, "Fuselage");
-
+            
+            obj.fuselage_length = length;
             obj.components(end+1) = fuselage;
 
         end
