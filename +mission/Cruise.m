@@ -72,11 +72,11 @@ classdef Cruise < mission.Mission_Segment
             eulers(:, 3) = psi_Start;
 
             % Heading check for adding change in distance in +/- x_I
-            if abs(abs(psi_Start) - 180) < 1
-                delta_NED = - obj.dDelta;
+            if abs(psi_Start) > 1
+                delta_NED    = - obj.dDelta;
                 direc_Scalar = -1;
             else
-                delta_NED = obj.dDelta;
+                delta_NED    = obj.dDelta;
                 direc_Scalar = 1;
             end
             x_NED_End     = pos_NED_Start(1) + delta_NED;
@@ -100,7 +100,7 @@ classdef Cruise < mission.Mission_Segment
             D                     = CD(i) * q(i) * Sref;
             F_x_NED               = direc_Scalar * (cosd(alpha(i)) * thrust(i) - D);
             a_NED                 = [F_x_NED, 0, 0]/mass;
-            dt = abs(pos_NED(2, 1)-pos_NED(1, 1)) / v_NED(i, 1);
+            dt = abs((pos_NED(2, 1)-pos_NED(1, 1)) / v_NED(i, 1));
             if i > 1
                 t(i)       = t(i-1) + dt;
                 E(i) = E(i-1) + power(i)*dt;

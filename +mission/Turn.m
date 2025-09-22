@@ -293,13 +293,12 @@ classdef Turn < mission.Mission_Segment
                 elseif dPsi_ < 0
                     eulers(i, 1) = -acosd(1/lf_Use); % Bank left to go left
                 end
-                BI = Vehicle.get_DCM_BI(eulers(i, 1), eulers(i, 2), eulers(i, 3));
-                IB = BI';
+                v_NED(i,:) = v_Calc * [cosd(eulers(i,3)), sind(eulers(i, 3)), 0];
                 vAir_NED(i, :) = v_NED(i, :);
                 aCentr = g*sqrt(lf_Use^2 - 1);
                 omega  = 180/pi*aCentr/v_Calc; 
-                if i < 1
-                    dt = abs((eulers(2, 3)-eulers(1, 3))/omega);
+                if i < numVals_
+                    dt = abs((eulers(5, 3)-eulers(4, 3))/omega);
                 end
                 if i>1
                     t(i) = t(i-1)+ dt;
@@ -310,6 +309,8 @@ classdef Turn < mission.Mission_Segment
                 pos_NED(i,3) = pos_NED_Start(3);
             end
             
+            pos_NED(end, 2) = 0;
+
         % New structure/table. All vectors in NED
             Snew.Airspeed_NED    = vAir_NED;
             Snew.Groundspeed_NED = v_NED;
