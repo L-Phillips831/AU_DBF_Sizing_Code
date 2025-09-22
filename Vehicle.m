@@ -23,7 +23,8 @@ classdef Vehicle < handle
         mission_1_W (1,1) double
         mission_2_W (1,1) double
         mission_3_W (1,1) double
-        MTOW (1,1) double = 15/2.2
+        MTOW (1,1) double = 15 * 4.45
+        We (1,1) double
 
         S_ref (1,1) double                              % Vehicle reference area  [m]
         c_ref (1,1) double                              % Vehicle reference chord [m]
@@ -370,7 +371,7 @@ classdef Vehicle < handle
             % - Add a better description of method
             % - Get Logan's formatting
 
-            W0 = 7; % [kg]
+            W0 = 15; % [lb]
             A = 5.098; % Based on previous years
             C = -0.791; % Based on previous years
             rho_Battery = 155; % [Wh/kg]
@@ -391,7 +392,7 @@ classdef Vehicle < handle
             % Converge on MTOW
             for i = 1:100
                 W_Empty_Frac = A*W0^C;
-                W_Empty = W_Empty_Frac * W0;
+                W_Empty = W_Empty_Frac * W0 / 2.2;  % [lbf -> kg]
                 W0_Prev = W0;
                 W0 = W_Empty + max_payload + W_Battery;
                 if abs((W0_Prev - W0)/W0) < 0.001
@@ -399,10 +400,12 @@ classdef Vehicle < handle
                 end
             end
 
-            obj.MTOW = W0;
-            obj.mission_1_W = W_Empty + M1_payload + W_Battery;
-            obj.mission_2_W = W_Empty + M2_payload + W_Battery;
-            obj.mission_3_W = W_Empty + M3_payload + W_Battery;
+            obj.We = W_Empty;
+
+            obj.MTOW = W0*9.81;
+            obj.mission_1_W = (W_Empty + M1_payload + W_Battery)*9.81;
+            obj.mission_2_W = (W_Empty + M2_payload + W_Battery)*9.81;
+            obj.mission_3_W = (W_Empty + M3_payload + W_Battery)*9.81;
 
 
         end

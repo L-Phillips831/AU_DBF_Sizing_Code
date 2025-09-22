@@ -9,16 +9,19 @@ clc, clear, close all;
 
 
 %% Create the Optimizer Object
-
-ga_settings.lower_bds = [5*0.3048, 17, 4, 0];                % Set the lower bounds for the optimizer
-ga_settings.upper_bds = [30, 30, 8, 10];               % Set the upper bounds for the  optimizer
-ga_settings.pop_size = 25;                           % Set the population size for GA optimizer
-ga_settings.generations = 15;                         % Define the number of generations for the GA optimizer
-GA_optimizer = optimizer.GA_Optimizer(ga_settings);  % Create optimizer object       
+                        % Banner Length     W_S     AR      Num_Pucks
+ga_settings.lower_bds = [5*0.3048,          96,     4,       1];                        % Set the lower bounds for the optimizer
+ga_settings.upper_bds = [30*0.3048,         200,    8,      10];                        % Set the upper bounds for the  optimizer
+ga_settings.pop_size = 25;                                                              % Set the population size for GA optimizer
+ga_settings.generations = 15;                                                           % Define the number of generations for the GA optimizer
+GA_optimizer = optimizer.GA_Optimizer(ga_settings);                                     % Create optimizer object       
 
 
 [best_score, best_params] = GA_optimizer.run(@MOG_Solver);
-% MOG_Solver(10*0.3048, 20, 4.4, 3);
+% MOG_Solver([9.10303528919316	195.098305619556	5.42172396452136    1.84206183208210]);
+
+% Optimized Params
+
 
 fprintf("Lowest Cost: %.3e\n", best_score);
 MOG_Solver(best_params);
@@ -36,6 +39,7 @@ function cost = MOG_Solver(input_arr)
     %%% Tallying
     persistent total_iterations
     persistent converged_iterations
+
     if isempty(total_iterations) || isempty(converged_iterations)
         total_iterations = 0;
         converged_iterations = 0;
@@ -109,32 +113,31 @@ function cost = MOG_Solver(input_arr)
 
     safety_margin = 1.0;
 
-    aircraft.battery_capacity
-    while (abs(max_E*safety_margin - aircraft.battery_capacity) > 1)
-        fprintf("Current Solved Energy is %.3f Wh. Resizing.\n", max_E);
-        aircraft.resize_geom(max_E*safety_margin);
-        
-
-        [mission_1_t, mission_1_E, tab] = run_mission_1(aircraft, flag_dist, vWind);
-        [mission_2_t, mission_2_E, tab, m2_laps] = run_mission_2(aircraft, flag_dist, vWind);
-        [mission_3_t, mission_3_E, tab, m3_laps] = run_mission_3(aircraft, flag_dist, vWind);
-
-
-        mission_1_E = 0;
-
-        %%% Gather Total Performance
-        max_E = max([mission_1_E, mission_2_E, mission_3_E]) / 3600;
-        if max_E > 100
-            cost = (max_E - 100) * 1e4; % Signal that this branch is better than others
-            fprintf("Aircraft failed to meet 100 Wh limit. Total Energy usage of %.3f\n", max_E);
-            fprintf("Setting cost to %.3e\n", cost);
-            total_iterations = total_iterations + 1;
-            return;
-        end
-
-        
-
-    end
+    % while (abs(max_E*safety_margin - aircraft.battery_capacity) > 1)
+    %     fprintf("Current Solved Energy is %.3f Wh. Resizing.\n", max_E);
+    %     aircraft.resize_geom(max_E*safety_margin);
+    % 
+    % 
+    %     [mission_1_t, mission_1_E, tab] = run_mission_1(aircraft, flag_dist, vWind);
+    %     [mission_2_t, mission_2_E, tab, m2_laps] = run_mission_2(aircraft, flag_dist, vWind);
+    %     [mission_3_t, mission_3_E, tab, m3_laps] = run_mission_3(aircraft, flag_dist, vWind);
+    % 
+    % 
+    %     mission_1_E = 0;
+    % 
+    %     %%% Gather Total Performance
+    %     max_E = max([mission_1_E, mission_2_E, mission_3_E]) / 3600;
+    %     if max_E > 100
+    %         cost = (max_E - 100) * 1e4; % Signal that this branch is better than others
+    %         fprintf("Aircraft failed to meet 100 Wh limit. Total Energy usage of %.3f\n", max_E);
+    %         fprintf("Setting cost to %.3e\n", cost);
+    %         total_iterations = total_iterations + 1;
+    %         return;
+    %     end
+    % 
+    % 
+    % 
+    % end
 
     fprintf("Design Converged at %.3f Wh.\n", max_E);
     converged_iterations = converged_iterations + 1;
@@ -321,7 +324,8 @@ function [t_final, E_final, tab, laps] = run_mission_3(aircraft, flag_dist, vWin
 
     %%% Mission 3
     banner_CD_0 = aircraft.get_banner_drag(100 * 0.3048);
-    aircraft.CD_0 = aircraft.CD_0 + banner_CD_0;
+    banner_area = aircraft.banner_length^2 / 5;
+    aircraft.CD_0 = aircraft.CD_0 + banner_CD_0*aircraft.S_ref/banner_area;
 
     % Lap 1
     mission_3_laps = 3;
