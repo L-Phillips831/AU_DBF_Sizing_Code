@@ -6,21 +6,22 @@ clc, clear, close all;
 %                                                                        %   
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
 %% Create the Optimizer Object
 
 ga_settings.lower_bds = [5*0.3048, 17, 4, 0];                % Set the lower bounds for the optimizer
 ga_settings.upper_bds = [30, 30, 8, 10];               % Set the upper bounds for the  optimizer
-ga_settings.pop_size = 15;                           % Set the population size for GA optimizer
-ga_settings.generations = 5;                         % Define the number of generations for the GA optimizer
+ga_settings.pop_size = 25;                           % Set the population size for GA optimizer
+ga_settings.generations = 15;                         % Define the number of generations for the GA optimizer
 GA_optimizer = optimizer.GA_Optimizer(ga_settings);  % Create optimizer object       
 
 
 [best_score, best_params] = GA_optimizer.run(@MOG_Solver);
 % MOG_Solver(10*0.3048, 20, 4.4, 3);
 
-
-
-
+fprintf("Lowest Cost: %.3e\n", best_score);
+MOG_Solver(best_params);
 
 
 
@@ -31,6 +32,17 @@ GA_optimizer = optimizer.GA_Optimizer(ga_settings);  % Create optimizer object
 
 
 function cost = MOG_Solver(input_arr)
+
+    %%% Tallying
+    persistent total_iterations
+    persistent converged_iterations
+    if isempty(total_iterations) || isempty(converged_iterations)
+        total_iterations = 0;
+        converged_iterations = 0;
+    end
+
+    fprintf(" \n\n-------------- Total iterations: %d. Converged Iterations %d -------------- \n",...
+            total_iterations, converged_iterations);
 
     %%% Extract inputs
     banner_length    = input_arr(1);
@@ -71,7 +83,7 @@ function cost = MOG_Solver(input_arr)
     prop_diam = 11;
     aircraft.add_propulsion(bat_cells, bat_Wh, motor_kv, motor_max_current, prop_pitch, prop_diam);
 
-    aircraft.analyze_airframe()
+    aircraft.analyze_airframe();
     
 
     %%% Define Missions
@@ -91,10 +103,11 @@ function cost = MOG_Solver(input_arr)
         cost = (max_E - 100) * 1e6;
         fprintf("Aircraft failed to meet 100 Wh limit. Total Energy usage of %.3f\n", max_E);
         fprintf("Setting cost to %.3e\n", cost);
+        total_iterations = total_iterations + 1;
         return;
     end
 
-    safety_margin = 1.2;
+    safety_margin = 1.0;
 
     aircraft.battery_capacity
     while (abs(max_E*safety_margin - aircraft.battery_capacity) > 1)
@@ -112,9 +125,10 @@ function cost = MOG_Solver(input_arr)
         %%% Gather Total Performance
         max_E = max([mission_1_E, mission_2_E, mission_3_E]) / 3600;
         if max_E > 100
-            cost = (max_E - 100) * 1e6;
+            cost = (max_E - 100) * 1e4; % Signal that this branch is better than others
             fprintf("Aircraft failed to meet 100 Wh limit. Total Energy usage of %.3f\n", max_E);
             fprintf("Setting cost to %.3e\n", cost);
+            total_iterations = total_iterations + 1;
             return;
         end
 
@@ -123,7 +137,8 @@ function cost = MOG_Solver(input_arr)
     end
 
     fprintf("Design Converged at %.3f Wh.\n", max_E);
-
+    converged_iterations = converged_iterations + 1;
+    total_iterations = total_iterations + 1;
 
 
     % Generate Cost
@@ -161,6 +176,7 @@ function cost = MOG_Solver(input_arr)
     cost = 1/score * 100; % Higher score generates lower cost.
 
     fprintf("Generated cost: %.3f\n", cost);
+
 
 end
 

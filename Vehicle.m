@@ -96,8 +96,8 @@ classdef Vehicle < handle
 
             wing_area = obj.MTOW / obj.W_S;
             wing_span = sqrt(AR_ * wing_area);
-            if wing_span > 5.0
-                wing_span = 5;
+            if wing_span > 5.0*0.3048
+                wing_span = 5*.3048;
                 AR_ = wing_span^2 / wing_area;
             end
 
@@ -280,6 +280,8 @@ classdef Vehicle < handle
 
         end
 
+
+        %%%  BUGGY
         function obj = resize_geom(obj, new_E)
 
             % Update new battery size
@@ -345,8 +347,7 @@ classdef Vehicle < handle
 
         function CD = get_banner_drag(obj, V)
             
-            rho = 1.225;
-            Re = rho * V * obj.banner_length / 1.789e-5;
+            Re = obj.rho * V * obj.banner_length / 1.789e-5;
             Re_crit = 10e4;
 
             CD = 0.108*Re^(-0.2) * min([(1 + 0.8*log(Re/Re_crit)), 6]);
