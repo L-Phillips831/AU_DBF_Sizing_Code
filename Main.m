@@ -17,15 +17,17 @@ ga_settings.generations = 5;                                                    
 GA_optimizer = optimizer.GA_Optimizer(ga_settings);                                     % Create optimizer object       
 
 
-% [best_score, best_params] = GA_optimizer.run(@MOG_Solver);
-MOG_Solver([8.38192251177078	115.884503942293	5.84665642773867	1.05790321640620]);
+% [best_score, best_params] = GA_optimizer.run(@get_GA_cost);
+best_params = [8.38192251177078	115.884503942293	5.84665642773867	1.05790321640620];
 
 % Optimized Params
 
+[cost, aircraft, m2_laps, m3_laps] = MOG_Solver(best_params);
+aircraft
 
-fprintf("Lowest Cost: %.3e\n", best_score);
-MOG_Solver(best_params);
-
+fprintf("Laps Completed: \n");
+fprintf("Mission 2: %d \n", m2_laps);
+fprintf("Mission 3 %d\n", m3_laps);
 
 
 
@@ -33,8 +35,7 @@ MOG_Solver(best_params);
 
 %% Running the MOG Solver
 
-
-function cost = MOG_Solver(input_arr)
+function [cost, aircraft, m2_laps, m3_laps] = MOG_Solver(input_arr)
 
     %%% Tallying
     persistent total_iterations
@@ -198,15 +199,17 @@ function cost = MOG_Solver(input_arr)
 
     fprintf("Generated cost: %.3f\n", cost);
 
-    aircraft
-
 
 end
 
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% COST WRAPPER %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function cost = get_GA_cost(input_arr)
+    
+    [cost, ~, ~, ~] = MOG_Solver(input_arr);
 
-
+end
 
 
 
