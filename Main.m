@@ -11,9 +11,9 @@ clc, clear, close all;
 %% Create the Optimizer Object
                         % Banner Length     W_S     AR      Num_Pucks
 ga_settings.lower_bds = [5*0.3048,          96,     4,       1];                        % Set the lower bounds for the optimizer
-ga_settings.upper_bds = [30*0.3048,         200,    8,      10];                        % Set the upper bounds for the  optimizer
+ga_settings.upper_bds = [30*0.3048,         200,    8,      6];                        % Set the upper bounds for the  optimizer
 ga_settings.pop_size = 15;                                                              % Set the population size for GA optimizer
-ga_settings.generations = 5;                                                           % Define the number of generations for the GA optimizer
+ga_settings.generations = 6;                                                           % Define the number of generations for the GA optimizer
 GA_optimizer = optimizer.GA_Optimizer(ga_settings);                                     % Create optimizer object       
 
 
@@ -122,8 +122,8 @@ function [cost, aircraft, m2_laps, m3_laps] = MOG_Solver(input_arr)
         total_iterations = total_iterations + 1;
         return;
     end
-
-    safety_margin = 1.2;
+%{
+    safety_margin = 1.1;
 
     while (abs(max_E*safety_margin - aircraft.battery_capacity) > 10)
         old_aircraft = aircraft;
@@ -145,12 +145,10 @@ function [cost, aircraft, m2_laps, m3_laps] = MOG_Solver(input_arr)
         [mission_3_t, mission_3_E, tab, m3_laps] = run_mission_3(aircraft, flag_dist, vWind);
 
 
-        mission_1_E = 0;
-
         %%% Gather Total Performance
         max_E = max([mission_1_E, mission_2_E, mission_3_E]) / 3600;
-        if max_E > 100
-            fprintf("New Aircraft failed to meet 100 Wh limit. Total Energy usage of %.3f\n", max_E);
+        if max_E > aircraft.battery_capacity
+            fprintf("New Aircraft failed to meet set battery capacity. Total Energy usage of %.3f\n", max_E);
             fprintf("Using previous iteration.\n");
             aircraft = old_aircraft;
             max_E = old_E;
@@ -160,7 +158,7 @@ function [cost, aircraft, m2_laps, m3_laps] = MOG_Solver(input_arr)
 
 
     end
-
+%}
     fprintf("Design Converged at %.3f Wh.\n", max_E);
     converged_iterations = converged_iterations + 1;
     total_iterations = total_iterations + 1;
