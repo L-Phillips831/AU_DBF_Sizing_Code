@@ -211,10 +211,11 @@ classdef Vehicle < handle
 
             elec_length = 9 * 0.0254;
             length = elec_length + (obj.num_ducks / 2 * duck_length) + obj.num_pucks*puck_thickness;
+            scaling_factor = 1.5;
 
-            fuselage = geom.Fuselage(length, diameter, "Fuselage");
+            fuselage = geom.Fuselage(length*scaling_factor, diameter, "Fuselage");
             
-            obj.fuselage_length = length;
+            obj.fuselage_length = length*scaling_factor;
             obj.components(end+1) = fuselage;
 
         end
@@ -316,9 +317,23 @@ classdef Vehicle < handle
             % --- Pass 1: Find and size wing ---
             for component = obj.components
                 if isa(component, "geom.Lifting_Surface") && component.style == "Wing"
+
+                    fprintf("Previous wing area: %.3f\n", component.S);
                     component.S = obj.MTOW / obj.W_S;
-                    component.span = min(5.0*0.3048, sqrt(component.AR * component.S));
-                    component.AR   = component.span^2 / component.S;
+                    fprintf("New wing area: %.3f\n\n", component.S);
+
+                    component.span = sqrt(component.AR * component.S);
+                    if component.span > 5.0*0.3048
+                        component.span = 5*.3048;
+                        component.AR = component.span^2 / component.S;
+
+                        % Verify this is an allowable wing
+                        if component.AR > obj.max_AR || component.AR < obj.min_AR
+                            flag = false;
+                            return;
+                        end
+
+                    end
                                    
                     % Verify this is an allowable wing
                     if component.AR > obj.max_AR || component.AR < obj.min_AR
