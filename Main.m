@@ -55,6 +55,10 @@ function [cost, aircraft, m2_laps, m3_laps] = MOG_Solver(input_arr)
     AR               = input_arr(3);
     num_pucks        = ceil(input_arr(4));
 
+
+    %%% Initialize Outputs
+    m2_laps = 0; m3_laps = 0;
+
     %%% Define Vehicle
     aircraft = Vehicle("Aircraft", W_S, num_pucks, banner_length, 0.7, 0.05);
 
