@@ -17,8 +17,8 @@ ga_settings.generations = 5;                                                    
 GA_optimizer = optimizer.GA_Optimizer(ga_settings);                                     % Create optimizer object       
 
 
-% [best_score, best_params] = GA_optimizer.run(@get_GA_cost);
-best_params = [8.38192251177078	115.884503942293	5.84665642773867	1.05790321640620];
+[best_score, best_params] = GA_optimizer.run(@get_GA_cost);
+% best_params = [8.38192251177078	115.884503942293	5.84665642773867	1.05790321640620];
 
 % Optimized Params
 
