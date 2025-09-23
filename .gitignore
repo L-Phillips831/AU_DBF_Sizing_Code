@@ -1,4 +1,4 @@
-/+lib/+AVL/Saves/
-/+lib/+AVL/Input/
+/+lib/+AVL/Saves/*
+/+lib/+AVL/Input/*
 
 *.asv
