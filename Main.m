@@ -169,8 +169,8 @@ function [cost, aircraft, m2_laps, m3_laps] = MOG_Solver(input_arr)
     % num_laps_3
     score_GM_Norm = 10;
     time_run = 1.5; % seconds
-    time_load_M2 = 2*ceil(aircraft.num_pucks/4) + ceil(2.5*aircraft.num_ducks/6); % fix
-    time_unload_M2 = 2*ceil(aircraft.num_pucks/4) + ceil(aircraft.num_ducks/4); % fix
+    time_load_M2 = ceil(3*aircraft.num_pucks/4) + ceil(3*aircraft.num_ducks/6); % fix
+    time_unload_M2 = ceil(1.5*aircraft.num_pucks/4) + ceil(1.5*aircraft.num_ducks/6); % fix
     time_load_M3 = 2; % seconds
     score_GM_AU = 4*time_run + time_load_M2 + time_unload_M2 + time_load_M3;
     score_GM = score_GM_Norm/score_GM_AU;

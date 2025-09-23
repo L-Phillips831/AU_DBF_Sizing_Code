@@ -49,18 +49,18 @@ classdef Takeoff < mission.Mission_Segment
             vAir_NED   = zeros(numParts*numVals_, 3);
             v_NED      = zeros(numParts*numVals_, 3);
             vWind_NED_ = repmat(vWind_NED_Start, numParts*numVals_, 1);
-            eulers    = zeros(numParts*numVals_, 3);
-            pos_NED   = zeros(numParts*numVals_, 3);
-            throttle  = T_set_ * ones(numParts*numVals_, 1);
-            thrust    = zeros(numParts*numVals_, 1);
-            q         = zeros(numParts*numVals_, 1);
-            CL        = zeros(numParts*numVals_, 1);
-            CD        = zeros(numParts*numVals_, 1);
-            alpha     = zeros(numParts*numVals_, 1);
-            gamma     = zeros(numParts*numVals_, 1);
-            E         = zeros(numParts*numVals_, 1);
-            power     = zeros(numParts*numVals_, 1);
-            t         = zeros(numParts*numVals_, 1);
+            eulers     = zeros(numParts*numVals_, 3);
+            pos_NED    = zeros(numParts*numVals_, 3);
+            throttle   = T_set_ * ones(numParts*numVals_, 1);
+            thrust     = zeros(numParts*numVals_, 1);
+            q          = zeros(numParts*numVals_, 1);
+            CL         = zeros(numParts*numVals_, 1);
+            CD         = zeros(numParts*numVals_, 1);
+            alpha      = zeros(numParts*numVals_, 1);
+            gamma      = zeros(numParts*numVals_, 1);
+            E          = zeros(numParts*numVals_, 1);
+            power      = zeros(numParts*numVals_, 1);
+            t          = zeros(numParts*numVals_, 1);
 
         % Ground Run
             v_Air_Static            = [0, 0, 0] - vWind_NED_Start;
@@ -120,21 +120,24 @@ classdef Takeoff < mission.Mission_Segment
 
         % Climb Transition
             % Find best vClimb and gamma_Air
-            v_opts = linspace(0, 25, numVals_);
+            v_opts = linspace(0, 30, numVals_);
             hDots = zeros(numVals_, 1);
             CLs = zeros(numVals_, 1);
-            a_prev = a_NED(end,1);
             for i = 1:numVals_
                 RPM = obj.vehicle.prop.calcRPM(obj.T_set_climb);
                 [t_Pos,~]    = obj.vehicle.prop.get_Thrust_Power(RPM, v_opts(i));
                 CLs(i)       = weight / (Sref * 0.5 * rho * v_opts(i)^2);
                 Cd       = Cd_0 + k1*CLs(i) + k2*CLs(i)^2;
                 d        = Cd * Sref * 0.5 * rho * v_opts(i)^2;
-                hDots(i) = v_opts(i) * (t_Pos-d- a_prev*mass) / weight;
+                hDots(i) = v_opts(i) * (t_Pos-d) / weight;
             end
             [hDot_climb, idx] = max(hDots);
             vClimb            = v_opts(idx);
-            gamma_Air_Climb   = asind(hDot_climb / vClimb);
+            if hDot_climb > vClimb/sqrt(2)
+                gamma_Air_Climb = 45; % Set max angle of climb to 45 deg
+            else
+                gamma_Air_Climb   = asind(hDot_climb / vClimb);
+            end
             CL_climb          = CLs(idx);
             alpha_climb       = obj.vehicle.get_req_alpha( CL_climb);
             
@@ -143,8 +146,8 @@ classdef Takeoff < mission.Mission_Segment
             gamma_Air  = linspace(0, gamma_Air_Climb, numVals_);
             alpha((numVals_ + 1):(2*numVals_)) = linspace(alpha(numVals_), alpha_climb, numVals_);
             CL((numVals_ + 1):(2*numVals_)) = linspace(CL(numVals_), CL_climb, numVals_);
-            n_Trans         = 1.2;
-            R = (vLOF + vClimb)^2 / (4*g*(n_Trans-1));
+
+            dt = 5/99;
 
             for i = (numVals_ + 1):(2*numVals_)
                 if (i-numVals_) > 1
@@ -152,16 +155,13 @@ classdef Takeoff < mission.Mission_Segment
                 else
                     t(i) = t(i-1);
                 end
-                gammaDot = 180/pi*vAir_total(i-numVals_)/R;
-                dt = (gamma_Air(2) - gamma_Air(1))/gammaDot;
                 q(i)     = 0.5 * rho * vAir_total(i-numVals_)^2;
                 CD(i)    = Cd_0 + k1*CL(i)^2;
                 RPM = obj.vehicle.prop.calcRPM(obj.T_set);
                 [thrust(i), power(i)] = obj.vehicle.prop.get_Thrust_Power(RPM, vAir_total(i-numVals_));
                 pSpec = vAir_total(i-numVals_)*(thrust(i)-CD(i)*Sref*q(i))/weight; % Added this guy
-                dvTotal = vAir_total(2) - vAir_total(1);
-                %pSpec_Z = pSpec - vAir_total(i-numVals_)/g*dvTotal/dt;
-                pSpec_Z = pSpec;
+                dvTotal = vAir_total(3) - vAir_total(2);
+                pSpec_Z = pSpec - vAir_total(i-numVals_)/g*dvTotal/dt;
                 vAir_NED(i, 3) = - pSpec_Z;
                 vAir_NED(i, 1) = vAir_total(i-numVals_)*cosd(gamma_Air(i-numVals_));
                 v_NED(i, :)    = vWind_NED_(i, :) + vAir_NED(i, :);

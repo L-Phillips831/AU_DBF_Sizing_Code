@@ -89,7 +89,10 @@ To do:
             CD_use    = Cd_0 + k1*CL_use + k2*CL_use^2;
             drag      = CD_use * Sref * q_use;
             pSpec     = (thrust_use - drag) * vClimb_ / weight;
-            dt        = d_Z / -pSpec;
+            if pSpec >= vClimb_/sqrt(2)
+                pSpec = vClimb_/sqrt(2);
+            end
+            dt        = abs(d_Z / -pSpec);
 
         % Tracking
             for i = 1:numVals_
