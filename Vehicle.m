@@ -137,7 +137,7 @@ classdef Vehicle < handle
 
 
         
-        function obj = add_HT(obj, AR_, airfoil_)
+        function [obj, flag] = add_HT(obj, AR_, airfoil_)
             % Method for adding HT to vehicle component list. Assumed
             % rectangular body
             % Params:
@@ -147,6 +147,8 @@ classdef Vehicle < handle
             %   - updated vehicle object with component addition
             %
 
+            flag = true;
+
             L_HT_ = obj.aircraft_length * 0.6;  % Raymer assumption of L_HT
             obj.L_HT = L_HT_;
             S_HT = obj.S_ref * obj.c_ref * obj.HT_coeff / L_HT_;
@@ -154,6 +156,13 @@ classdef Vehicle < handle
             chord = S_HT / span;
 
             x_loc_ = obj.aircraft_length - (0.25*chord);
+            wing_chord = obj.c_ref;
+
+            if (obj.L_HT - 0.25*chord - 0.75*wing_chord) <= 0)
+                fprintf("Collision with HT and main wing!\n");
+                flag = false;
+                return;
+            end
 
             airfoil_str = fullfile("Airfoils\", sprintf("%s.dat",airfoil_));
 
@@ -360,6 +369,12 @@ classdef Vehicle < handle
                             S_HT = obj.S_ref * obj.c_ref * obj.HT_coeff / obj.L_HT;
                             span = sqrt(component.AR * S_HT);
                             chord = S_HT / span;
+
+                            if (obj.L_HT - 0.25*chord - 0.75*obj.S_ref) <= 0)
+                                fprintf("Collision with new HT and main wing!\n");
+                                flag = false;
+                                return;
+                            end
 
                             component.S = S_HT;
                             component.span = span;

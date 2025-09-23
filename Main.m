@@ -11,9 +11,9 @@ clc, clear, close all;
 %% Create the Optimizer Object
                         % Banner Length     W_S     AR      Num_Pucks
 ga_settings.lower_bds = [5*0.3048,          96,     4,       1];                        % Set the lower bounds for the optimizer
-ga_settings.upper_bds = [30*0.3048,         200,    8,      6];                        % Set the upper bounds for the  optimizer
+ga_settings.upper_bds = [30*0.3048,         200,    8,       6];                        % Set the upper bounds for the  optimizer
 ga_settings.pop_size = 15;                                                              % Set the population size for GA optimizer
-ga_settings.generations = 6;                                                           % Define the number of generations for the GA optimizer
+ga_settings.generations = 5;                                                           % Define the number of generations for the GA optimizer
 GA_optimizer = optimizer.GA_Optimizer(ga_settings);                                     % Create optimizer object       
 
 
@@ -82,7 +82,15 @@ function [cost, aircraft, m2_laps, m3_laps] = MOG_Solver(input_arr)
     % Add HT
     HT_AR_ = 3.0;
     HT_airfoil_ = "NACA0012";
-    aircraft.add_HT(HT_AR_, HT_airfoil_);
+    [~, flag] = aircraft.add_HT(HT_AR_, HT_airfoil_);
+
+    if ~flag
+        cost = 1e8;
+        fprintf("Setting cost to %.3e.\n", cost);
+        total_iterations = total_iterations + 1;
+        return;
+    end
+      
 
     % Add VT
     VT_AR_ = 1.0;
