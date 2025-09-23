@@ -54,7 +54,7 @@ classdef propeller
                     n = n+1;
                     TableFlag = true;
                 elseif TableFlag == true % Gets prop data and resets TableFlag
-            
+
                     Data(:,:,i-1) = readmatrix(perfDataFile,"Range",string(n+5)+":"+string(n+35));
                     TableFlag = false;
                     n = n+1;

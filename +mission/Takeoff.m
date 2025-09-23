@@ -123,13 +123,14 @@ classdef Takeoff < mission.Mission_Segment
             v_opts = linspace(0, 25, numVals_);
             hDots = zeros(numVals_, 1);
             CLs = zeros(numVals_, 1);
+            a_prev = a_NED(end,1);
             for i = 1:numVals_
                 RPM = obj.vehicle.prop.calcRPM(obj.T_set_climb);
                 [t_Pos,~]    = obj.vehicle.prop.get_Thrust_Power(RPM, v_opts(i));
                 CLs(i)       = weight / (Sref * 0.5 * rho * v_opts(i)^2);
                 Cd       = Cd_0 + k1*CLs(i) + k2*CLs(i)^2;
                 d        = Cd * Sref * 0.5 * rho * v_opts(i)^2;
-                hDots(i) = v_opts(i) * (t_Pos-d) / weight;
+                hDots(i) = v_opts(i) * (t_Pos-d- a_prev*mass) / weight;
             end
             [hDot_climb, idx] = max(hDots);
             vClimb            = v_opts(idx);

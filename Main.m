@@ -91,8 +91,8 @@ function [cost, aircraft, m2_laps, m3_laps] = MOG_Solver(input_arr)
     bat_Wh = 100;
     motor_kv = 710;
     motor_max_current = 68;
-    prop_pitch = 8;
-    prop_diam = 11;
+    prop_pitch = 85;
+    prop_diam = 14;
     aircraft.add_propulsion(bat_cells, bat_Wh, motor_kv, motor_max_current, prop_pitch, prop_diam);
 
     aircraft.analyze_airframe();
@@ -236,7 +236,7 @@ function [t_final, E_final, tab] = run_mission_1(aircraft, flag_dist, vWind)
 
     dist_traveled = tab.Position_NED(end,1);
     m1_lap1_cruise = flag_dist/2 - dist_traveled;
-    m1_cruise_throttle = 0.65;
+    m1_cruise_throttle = 0.6;
     m1_turn_throttle = 0.8;
     mission_1.add_cruise(m1_lap1_cruise, m1_cruise_throttle);
     mission_1.add_turn(m1_turn_throttle, 180, 'sustained');
@@ -291,7 +291,7 @@ function [t_final, E_final, tab, laps] = run_mission_2(aircraft, flag_dist, vWin
 
     dist_traveled = tab.Position_NED(end,1);
     m2_lap1_cruise = flag_dist/2 - dist_traveled;
-    m2_cruise_throttle = 0.7;
+    m2_cruise_throttle = 0.8;
     mission_2.add_cruise(m2_lap1_cruise, m2_cruise_throttle);
 
     % Finish the lap
@@ -356,8 +356,8 @@ function [t_final, E_final, tab, laps] = run_mission_3(aircraft, flag_dist, vWin
 
     % Lap 1
     m3_laps = 0;
-    m3_takeoff_setting = 0.9;
-    m3_climb_throttle = 0.9;
+    m3_takeoff_setting = 0.8;
+    m3_climb_throttle = 0.8;
     mission_3.add_takeoff(m3_takeoff_setting, m3_climb_throttle);
 
     m3_climb_h = 200 * 0.3048;

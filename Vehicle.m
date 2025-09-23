@@ -230,7 +230,7 @@ classdef Vehicle < handle
             esc_ = powerplant.esc(100, 100);
             motor_ = powerplant.motor(motor_kv,motor_max_current,0.1);
 
-            data_file = sprintf("+powerplant//Propeller Data Files//PER3_%.0fx%.0f.dat", prop_diam, prop_pitch);
+            data_file = sprintf("+powerplant//Propeller Data Files//PER3_%.0fx%.0fE.dat", prop_diam, prop_pitch);
             propeller_ = powerplant.propeller(prop_pitch, prop_diam, data_file);
 
             obj.prop = powerplant.Propulsion(bat_,esc_,motor_,propeller_);
