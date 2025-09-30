@@ -20,16 +20,15 @@ GA_optimizer = optimizer.GA_Optimizer(ga_settings);                             
 % [best_score, best_params] = GA_optimizer.run(@get_GA_cost);
 best_params = [8.38192251177078	115.884503942293	5.84665642773867	1.05790321640620];
 
-% Optimized Params
 
+% Optimized Params
 [cost, aircraft, m2_laps, m3_laps] = MOG_Solver(best_params);
-aircraft
 
 fprintf("Laps Completed: \n");
 fprintf("Mission 2: %d \n", m2_laps);
 fprintf("Mission 3 %d\n", m3_laps);
 
-
+aircraft.print('ft');
 
 
 

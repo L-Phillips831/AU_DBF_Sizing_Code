@@ -28,11 +28,11 @@ classdef Mission_Builder < handle  % stupid in-place modification requirement
 
             switch flag_
                 case 'mission 1'
-                    obj.vehicle.mass = obj.vehicle.mission_1_W / 9.81;
+                    obj.vehicle.mass = obj.vehicle.mission_1_W / Vehicle.g;
                 case 'mission 2'
-                    obj.vehicle.mass = obj.vehicle.mission_2_W / 9.81;
+                    obj.vehicle.mass = obj.vehicle.mission_2_W / Vehicle.g;
                 case 'mission 3'
-                    obj.vehicle.mass = obj.vehicle.mission_3_W / 9.81;
+                    obj.vehicle.mass = obj.vehicle.mission_3_W / Vehicle.g;
                 otherwise
                     error('Improper mission flag.');
             end

@@ -4,7 +4,7 @@ classdef Fuselage < geom.Component
     
     properties
         name string
-        
+        style = 'Fuselage'
         diam (1,1) double
         length (1,1) double
 

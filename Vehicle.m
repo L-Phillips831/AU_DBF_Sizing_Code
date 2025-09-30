@@ -3,6 +3,17 @@ classdef Vehicle < handle
     % that contains all pertinant information regarding the current
     % iteration of the design. Multiple vehicle objects will be created by
     % the optimizer in order to maximize mission performance
+
+    properties (Constant)
+        g = 9.81;
+        ft2m = 0.3048;
+        lb2N = 4.45;
+        lb2kg = Vehicle.g / Vehicle.lb2N;
+        in2m = Vehicle.ft2m / 12;
+
+    end
+    
+
     
     properties
         name string                                     % Vehicle Name
@@ -23,7 +34,7 @@ classdef Vehicle < handle
         mission_1_W (1,1) double
         mission_2_W (1,1) double
         mission_3_W (1,1) double
-        MTOW (1,1) double = 15 * 4.45
+        MTOW (1,1) double = 15 * Vehicle.lb2N;
         We (1,1) double
 
         S_ref (1,1) double                              % Vehicle reference area  [m]
@@ -82,7 +93,6 @@ classdef Vehicle < handle
 
         end
         
-
         
         function [obj, flag] = add_wing(obj, z_loc_, AR_, taper_, sweep_, airfoil_)
             % Method for adding the main wing to the vehicle component list.
@@ -104,8 +114,8 @@ classdef Vehicle < handle
 
             wing_area = obj.MTOW / obj.W_S;
             wing_span = sqrt(AR_ * wing_area);
-            if wing_span > 5.0*0.3048
-                wing_span = 5*.3048;
+            if wing_span > 5.0*Vehicle.ft2m
+                wing_span = 5*Vehicle.ft2m;
                 AR_ = wing_span^2 / wing_area;
 
                 % Verify this is an allowable wing
@@ -158,7 +168,7 @@ classdef Vehicle < handle
             x_loc_ = obj.aircraft_length - (0.25*chord);
             wing_chord = obj.c_ref;
 
-            if (obj.L_HT - 0.25*chord - 0.75*wing_chord) <= 0)
+            if (obj.L_HT - 0.25*chord - 0.75*wing_chord) <= 0
                 fprintf("Collision with HT and main wing!\n");
                 flag = false;
                 return;
@@ -213,12 +223,12 @@ classdef Vehicle < handle
             %   - updated vehicle object with added component
             %
 
-            duck_length = 2.5 * 0.0254;
-            puck_thickness = 1 * 0.0254;
+            duck_length = 2.5 * Vehicle.in2m;
+            puck_thickness = 1 * Vehicle.in2m;
 
-            diameter = 4.75 * 0.0254; % [in -> m]
+            diameter = 4.75 * Vehicle.in2m; % [in -> m]
 
-            elec_length = 9 * 0.0254;
+            elec_length = 9 * Vehicle.in2m;
             length = elec_length + (obj.num_ducks / 2 * duck_length) + obj.num_pucks*puck_thickness;
             scaling_factor = 1.5;
 
@@ -332,8 +342,8 @@ classdef Vehicle < handle
                     fprintf("New wing area: %.3f\n\n", component.S);
 
                     component.span = sqrt(component.AR * component.S);
-                    if component.span > 5.0*0.3048
-                        component.span = 5*.3048;
+                    if component.span > 5.0*Vehicle.ft2m
+                        component.span = 5*Vehicle.ft2m;
                         component.AR = component.span^2 / component.S;
 
                         % Verify this is an allowable wing
@@ -370,7 +380,7 @@ classdef Vehicle < handle
                             span = sqrt(component.AR * S_HT);
                             chord = S_HT / span;
 
-                            if (obj.L_HT - 0.25*chord - 0.75*obj.S_ref) <= 0)
+                            if (obj.L_HT - 0.25*chord - 0.75*obj.S_ref) <= 0
                                 fprintf("Collision with new HT and main wing!\n");
                                 flag = false;
                                 return;
@@ -408,6 +418,95 @@ classdef Vehicle < handle
             Re_crit = 10e4;
 
             CD = 0.108*Re^(-0.2) * min([(1 + 0.8*log(Re/Re_crit)), 6]);
+
+        end
+
+
+
+        function print(obj, units)
+
+            switch units
+                case {'ft', 'feet'}
+                    len_conversion = 1/Vehicle.ft2m;
+                    mass_conversion = 1/Vehicle.lb2kg;
+                    w_conversion = 1/Vehicle.lb2N;
+
+                case {'m', 'meters'}
+                    len_conversion = 1;
+                    mass_conversion = 1;
+                    w_conversion = 1;
+
+                case {'in', 'inches'}
+                    len_conversion = 1/Vehicle.in2m;
+                    mass_conversion = 1/Vehicle.lb2kg;
+                    w_conversion = 1/Vehicle.lb2N;
+
+                otherwise
+                    fprintf("Units not defined inside function. Could not print.");
+                    return;
+
+            end
+
+            fprintf('\n----------------- AIRCRAFT PARAMETERS -----------------\n\n');
+
+            fprintf('Current design parameters: \n\n');
+
+            W_S_ = obj.W_S * (w_conversion) / (len_conversion^2);
+            MTOW_ = obj.MTOW * w_conversion;
+            mission_2_W_ = obj.mission_2_W * w_conversion;
+            mission_3_W_ = obj.mission_3_W * w_conversion;
+
+            design_params = [W_S_, MTOW_, mission_2_W_, mission_3_W_, obj.battery_capacity];
+            design_param_tbl = array2table(design_params, 'VariableNames', {'Wing Loading', 'MTOW', 'Mission 2 Gross Weight', 'Mission 3 Gross Weight', 'Battery Capacity'});
+            disp(design_param_tbl);
+
+
+            fprintf('Reference Sizes: \n\n');
+
+            S_ref_ = obj.S_ref * (len_conversion^2);
+            c_ref_ = obj.c_ref * (len_conversion);
+            b_ref_ = obj.b_ref * len_conversion;
+
+            reference_geom_tbl = array2table([S_ref_, c_ref_, b_ref_], 'VariableNames', {'Wing Area', 'Chord', 'Span'});
+            disp(reference_geom_tbl);
+
+            fprintf("Printing components...\n");
+
+            fprintf("Fuselage: \n\n");
+            fuselage_len_ = obj.fuselage_length * len_conversion;
+            fuse_tbl = array2table([fuselage_len_, obj.lf_struc], 'VariableNames', {'Fuselage Length', 'Structural Load Factor'});
+            disp(fuse_tbl);
+        
+
+            for component = obj.components
+                if ~ismember(component.style, {'Wing','HT','Fin'})
+                    continue;
+                end
+
+                fprintf("%s:\n\n", component.name);
+
+                S_ = component.S * len_conversion^2;
+                AR_ = component.AR;
+                span_ = component.span * len_conversion;
+                chord_ = component.chord * len_conversion;
+                taper_ = component.taper;
+                sweep_ = component.sweep;
+                x_loc_ = component.x_loc * len_conversion;
+                z_loc_ = component.z_loc * len_conversion;
+                y_loc_ = component.y_loc * len_conversion;
+                rotation_ = component.rotation;
+
+                airfoil_ = component.airfoil_str;
+
+
+                component_tbl = ...
+                            table(S_, AR_, span_, chord_, taper_, sweep_, x_loc_, z_loc_, y_loc_, rotation_, airfoil_,...
+                                'VariableNames',...
+                                {'Area','Aspect Ratio', 'Span', 'Chord', 'Taper Ratio', 'Sweep Angle', 'X Location', 'Z Location', 'Y Location', 'Rotation', 'Airfoil'});
+
+                disp(component_tbl);
+
+            end
 
         end
         
@@ -448,7 +547,7 @@ classdef Vehicle < handle
             % Converge on MTOW
             for i = 1:100
                 W_Empty_Frac = A*W0^C;
-                W_Empty = W_Empty_Frac * W0 / 2.2;  % [lbf -> kg]
+                W_Empty = W_Empty_Frac * W0 / Vehicle.lb2kg;  % [lbf -> kg]
                 W0_Prev = W0;
                 W0 = W_Empty + max_payload + W_Battery;
                 if abs((W0_Prev - W0)/W0) < 0.001

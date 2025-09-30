@@ -35,7 +35,7 @@ classdef Cruise < mission.Mission_Segment
             k1       = obj.vehicle.K1;
             Cd_0      = obj.vehicle.CD_0;
             rho      = obj.vehicle.rho;      
-            g        = 9.81;    % Acceleration due to gravity [m/s^2]
+            g        = Vehicle.g;    % Acceleration due to gravity [m/s^2]
             numVals_ = obj.numVals;
 
         % Pull start of segment conditions

@@ -37,7 +37,7 @@ classdef Takeoff < mission.Mission_Segment
             T_set_           = obj.T_set;
             grFriction      = 0.05;
             k_TO            = 1.3;
-            g               = 9.81; 
+            g               = Vehicle.g; 
             mass            = obj.vehicle.mass;
             numVals_        = obj.numVals;
             numParts        = 2; % for a taildragger with no rotation
