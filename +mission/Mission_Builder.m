@@ -1,4 +1,4 @@
-classdef Mission_Builder < handle  % stupid in-place modification requirement
+classdef Mission_Builder < handle  
 
     properties (Access = private)
          n_laps (1,1) uint16                       % Total number of laps to be flown in the mission.

@@ -26,6 +26,8 @@ classdef Lifting_Surface < geom.Component & handle
     end
     
     methods (Access = public)
+
+        function obj = Lifting_Surface(name_, S_, AR_, chord_, span_, taper_, sweep_, style_, airfoil_)
         % Default constructor of the Lifting surface class.
         % Params:
         %   - S_: Double reference area
@@ -37,7 +39,6 @@ classdef Lifting_Surface < geom.Component & handle
         % Returns:
         %   - updated object
         %
-        function obj = Lifting_Surface(name_, S_, AR_, chord_, span_, taper_, sweep_, style_, airfoil_)
            obj.name = name_;
             obj.S = S_;
            obj.AR = AR_;
@@ -57,6 +58,8 @@ classdef Lifting_Surface < geom.Component & handle
         end
 
 
+
+        function obj = place_surface(obj, x_loc_, y_loc_, z_loc_, rot_)
         % Method to set the placement and orientation of a lifting surface. Used for
         % aero buildup and stability calculations. X loc is measuered
         % relative to datum, y and z loc measured relative to fuselage centerline
@@ -69,7 +72,6 @@ classdef Lifting_Surface < geom.Component & handle
         %  Returns:
         %   - updated object
         %
-        function obj = place_surface(obj, x_loc_, y_loc_, z_loc_, rot_)
             obj.x_loc = x_loc_;
             obj.z_loc = z_loc_;
             obj.y_loc = y_loc_;
@@ -77,6 +79,8 @@ classdef Lifting_Surface < geom.Component & handle
                 
         end
 
+        
+        function str = convert_to_avl_geom(obj)
         % Method to convert the object properties to the section that would
         % appear in an AVL geometry input file. Lines are separated as
         % elements in a string array.
@@ -84,11 +88,19 @@ classdef Lifting_Surface < geom.Component & handle
         %   - current obj
         % Returns:
         %   - str
+        % 
+        % CURRENT CAVEATS:
+        % Fin geometry (VT) assumes that the TE is aligned, and the LE x
+        % loc for sections is calculated using this assmuption.
         %
-        function str = convert_to_avl_geom(obj)
+        %  --- THE ABOVE CAVEATS WILL BE ADJUSTED, ALONG WITH ADDITIONS FOR
+        %  DIHEDRAL/ANHEDRAL AT A LATER DATE ---
+        %
 
-            root_chord = obj.chord;
+            MAC = obj.chord;
+            root_chord = MAC * 3/2 * (1+obj.taper)/(1+obj.taper+obj.taper^2);
             tip_chord = root_chord * obj.taper;
+            dx_loc = obj.sweep * obj.span/2;
 
             switch obj.style
                 case {"HT", "Wing"}
@@ -113,7 +125,7 @@ classdef Lifting_Surface < geom.Component & handle
                            "#-------------------------------------------------------------",...
                            "SECTION",...
                            "#Xle    Yle    Zle     Chord   Ainc  Nspanwise  Sspace",...
-                           sprintf("%.1f %.1f %.1f %.1f %.1f %.1f %.1f", obj.chord - tip_chord, obj.span/2, 0, tip_chord, 0, 0, 0),...
+                           sprintf("%.1f %.1f %.1f %.1f %.1f %.1f %.1f", dx_loc, obj.span/2, 0, tip_chord, 0, 0, 0),...
                            "AFILE",...
                            obj.airfoil_str,...
                            ];

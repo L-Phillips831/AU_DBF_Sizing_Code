@@ -128,18 +128,20 @@ classdef Vehicle < handle
 
             root_chord_ = wing_area / 0.5 / wing_span / (1 + taper_);
 
+            MAC_ = 2/3 * (1 + taper_ + taper_^2)/(1+taper_) * root_chord_;
+
             airfoil_str = fullfile("Airfoils\", sprintf("%s.dat",airfoil_));
 
             x_loc_ = x_loc_q4_ - 0.25*root_chord_;
 
-            wing = geom.Lifting_Surface("Wing", wing_area, AR_, root_chord_, wing_span, taper_, sweep_, "Wing", airfoil_str);
+            wing = geom.Lifting_Surface("Wing", wing_area, AR_, MAC_, wing_span, taper_, sweep_, "Wing", airfoil_str);
             wing.place_surface(x_loc_, 0, z_loc_, 0);
 
             obj.components(end+1) = wing;
 
             obj.aircraft_length = x_loc_q4_ / 0.4;
             obj.S_ref = wing_area;
-            obj.c_ref = root_chord_;
+            obj.c_ref = MAC_;
             obj.b_ref = wing_span;
 
             obj.CG = [x_loc_q4_, 0, 0]; % Place directly on q4 for now
@@ -456,8 +458,8 @@ classdef Vehicle < handle
             mission_2_W_ = obj.mission_2_W * w_conversion;
             mission_3_W_ = obj.mission_3_W * w_conversion;
 
-            design_params = [W_S_, MTOW_, mission_2_W_, mission_3_W_, obj.battery_capacity];
-            design_param_tbl = array2table(design_params, 'VariableNames', {'Wing Loading', 'MTOW', 'Mission 2 Gross Weight', 'Mission 3 Gross Weight', 'Battery Capacity'});
+            design_params = [W_S_, MTOW_, mission_2_W_, mission_3_W_, obj.battery_capacity, obj.banner_length];
+            design_param_tbl = array2table(design_params, 'VariableNames', {'Wing Loading', 'MTOW', 'Mission 2 Gross Weight', 'Mission 3 Gross Weight', 'Battery Capacity', 'Banner Length'});
             disp(design_param_tbl);
 
 

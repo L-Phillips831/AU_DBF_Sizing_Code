@@ -1,5 +1,10 @@
 clc, clear, close all;
 
+%%% Authors:
+% Logan Phillips and Ryan Holman
+
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                        %
 %                       AU MOG SIZING CODE MAIN                          %
@@ -18,7 +23,7 @@ GA_optimizer = optimizer.GA_Optimizer(ga_settings);                             
 
 
 % [best_score, best_params] = GA_optimizer.run(@get_GA_cost);
-best_params = [8.38192251177078	115.884503942293	5.84665642773867	1.05790321640620];
+best_params = [3 115.884503942293	5.84665642773867	1.05790321640620];
 
 
 % Optimized Params
@@ -29,7 +34,8 @@ fprintf("Mission 2: %d \n", m2_laps);
 fprintf("Mission 3 %d\n", m3_laps);
 
 aircraft.print('ft');
-
+banner_A = aircraft.banner_length^2 / 5
+aircraft.get_banner_drag(100 * Vehicle.ft2m) * banner_A / aircraft.S_ref
 
 
 %% Running the MOG Solver
@@ -65,7 +71,7 @@ function [cost, aircraft, m2_laps, m3_laps] = MOG_Solver(input_arr)
     aircraft.add_fuselage();
 
     % Add wing
-    taper_ = 1;
+    taper_ = 0.6;
     sweep_ = 0;
     airfoil_ = 'NACA2412';
     [~, flag] = aircraft.add_wing(0, AR, taper_, sweep_, airfoil_);
@@ -117,14 +123,15 @@ function [cost, aircraft, m2_laps, m3_laps] = MOG_Solver(input_arr)
     [mission_2_t, mission_2_E, tab, m2_laps] = run_mission_2(aircraft, flag_dist, vWind);
     [mission_3_t, mission_3_E, tab, m3_laps] = run_mission_3(aircraft, flag_dist, vWind);
 
+    fprintf("Energy Requirements: \n --- %.3f\n --- %.3f\n --- %.3f\n ", mission_1_E/3600, mission_2_E/3600, mission_3_E/3600);
 
-    mission_1_E = 0;
+    % mission_1_E = 0;
 
     %%% Gather Total Performance
     max_E = max([mission_1_E, mission_2_E, mission_3_E]) / 3600;
     if max_E > 100
         cost = (max_E - 100) * 1e6;
-        fprintf("Aircraft failed to meet 100 Wh limit. Total Energy usage of %.3f\n", max_E);
+        fprintf("Aircraft failed to meet 100 Wh limit. Maximum Energy usage of %.3f\n", max_E);
         fprintf("Setting cost to %.3e\n", cost);
         total_iterations = total_iterations + 1;
         return;
@@ -354,9 +361,8 @@ end
 function [t_final, E_final, tab, laps] = run_mission_3(aircraft, flag_dist, vWind)
 
     %%% Mission 3
-    banner_CD_0 = aircraft.get_banner_drag(100 * 0.3048);
     banner_area = aircraft.banner_length^2 / 5;
-    aircraft.CD_0 = aircraft.CD_0 + banner_CD_0*aircraft.S_ref/banner_area;
+    banner_CD_0 = aircraft.get_banner_drag(100 * 0.3048)*banner_area/aircraft.S_ref;
 
     % Lap 1
     mission_3_laps = 3;
@@ -376,11 +382,11 @@ function [t_final, E_final, tab, laps] = run_mission_3(aircraft, flag_dist, vWin
 
     dist_traveled = tab.Position_NED(end,1);
     m3_lap1_cruise = flag_dist/2 - dist_traveled;
-    m3_cruise_throttle = 0.7;
+    m3_cruise_throttle = 0.6;
     mission_3.add_cruise(m3_lap1_cruise, m3_cruise_throttle);
 
     % Finish the lap
-    m3_turn_throttle = 0.9;
+    m3_turn_throttle = 0.7;
     mission_3.add_turn(m3_turn_throttle, 180, 'sustained');
     mission_3.add_cruise(flag_dist/2, m3_cruise_throttle);
     mission_3.add_turn(m3_turn_throttle, 360, 'sustained');
@@ -390,6 +396,9 @@ function [t_final, E_final, tab, laps] = run_mission_3(aircraft, flag_dist, vWin
     
     [t_final, ~, tab] = mission_3.run(tab);
     mission_3.clear();
+
+    % Now drop the banner
+    aircraft.CD_0 = aircraft.CD_0 + 0.15;
 
     m3_laps = m3_laps + 1;
    while (true)
